@@ -268,8 +268,7 @@
         <div class="live-wrap">
           <div class="live-hero">
             <video id="liveVideo" autoplay muted loop playsinline>
-              <!-- public domain placeholder -->
-              <source src="https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4" type="video/mp4">
+              <source src="./living_cat2.mp4" type="video/mp4">
             </video>
             <div class="live-overlay"></div>
 
@@ -285,6 +284,16 @@
             <div class="behavior-chip ok" id="behaviorChip">
               <div class="b-dot"></div>
               <div id="behaviorText">正在巡视客厅</div>
+            </div>
+
+            <!-- LLM 风格实时解读气泡 -->
+            <div style="
+              position:absolute; left:50%; bottom:12px; transform:translateX(-50%);
+              width:92%; background:rgba(0,0,0,.55); color:#fff; padding:10px 12px;
+              border-radius:14px; font-size:13px; line-height:1.45; font-weight:650;
+              box-shadow:0 8px 16px rgba(0,0,0,.25); backdrop-filter: blur(4px);
+            " id="aiNarration">
+              AI 解读加载中…
             </div>
 
             <div class="live-status">
@@ -319,6 +328,24 @@
               </div>
             </div>
           </div>
+
+          <div style="height:10px"></div>
+
+          <!-- 今日小结卡片 -->
+          <div class="card" style="box-shadow:none;border:1px solid var(--line);margin:0;">
+            <div class="card-title" style="margin-bottom:6px;">
+              <span>今日小结</span>
+              <span class="sub" id="summaryTime">实时生成</span>
+            </div>
+            <div id="dailySummary" style="font-size:13px;line-height:1.55;font-weight:700;color:#111;">
+              小结生成中…
+            </div>
+            <div style="display:flex;gap:8px;margin-top:8px;">
+              <div class="btn ghost" id="btnRefreshSummary" style="flex:1;">刷新小结</div>
+              <div class="btn ghost" id="btnShareSummary" style="flex:1;">分享卡片（demo）</div>
+            </div>
+          </div>
+
         </div>
 
         <div style="height:10px"></div>
@@ -454,7 +481,7 @@
       <div class="card">
         <div class="section-title">关于本 Demo</div>
         <div class="tagline">
-          这是 H5 原型，仅模拟：直播追踪、行为识别、定位轨迹、事件/告警。<br/>
+          这是 H5 原型，仅模拟：直播追踪、行为识别、定位轨迹、事件/告警、今日小结。<br/>
           后续可替换真实摄像头流与模型结果。
         </div>
       </div>
@@ -502,6 +529,8 @@ const pets = [
   { id:"coco", name:"可可", emoji:"🐱", color:"#F59E0B" }
 ];
 
+// ✅ 客厅用你的本地视频 living_cat2.mp4
+// 卧室仍是占位视频，你后续只要同样换成 ./bed_cat.mp4 即可
 const cams = {
   living: { name:"客厅摄像头", video:"./living_cat2.mp4" },
   bed:    { name:"卧室摄像头", video:"./living_cat2.mp4" }
@@ -509,22 +538,22 @@ const cams = {
 
 const behaviors = {
   mino: [
-    { text:"正在巡视客厅", level:"ok", room:"客厅", pos:[32,38] },
-    { text:"在餐区闻食盆", level:"ok", room:"餐区", pos:[25,78] },
-    { text:"快速奔跑（疑似追逐）", level:"warn", room:"客厅", pos:[44,46] },
-    { text:"进入猫砂盆（如厕）", level:"ok", room:"猫砂区", pos:[76,74] },
-    { text:"疑似呕吐（已录制片段）", level:"danger", room:"客厅", pos:[36,52], abnormal:"vomit" },
-    { text:"趴卧休息", level:"ok", room:"卧室", pos:[78,26] },
-    { text:"与另一只猫对峙（疑似打架）", level:"danger", room:"客厅", pos:[50,44], abnormal:"fight" },
-    { text:"在卧室打盹", level:"ok", room:"卧室", pos:[80,22] },
-    { text:"长时间不动（需留意）", level:"warn", room:"卧室", pos:[82,18], abnormal:"still" },
+    { text:"正在巡视客厅", level:"ok", room:"客厅", pos:[32,38], action:"patrol", confidence:.86 },
+    { text:"在餐区闻食盆", level:"ok", room:"餐区", pos:[25,78], action:"sniff_food", confidence:.82 },
+    { text:"快速奔跑（疑似追逐）", level:"warn", room:"客厅", pos:[44,46], action:"chase", confidence:.67 },
+    { text:"进入猫砂盆（如厕）", level:"ok", room:"猫砂区", pos:[76,74], action:"litter", confidence:.90 },
+    { text:"疑似呕吐（已录制片段）", level:"danger", room:"客厅", pos:[36,52], abnormal:"vomit", action:"vomit", confidence:.78 },
+    { text:"趴卧休息", level:"ok", room:"卧室", pos:[78,26], action:"rest", confidence:.88 },
+    { text:"与另一只猫对峙（疑似打架）", level:"danger", room:"客厅", pos:[50,44], abnormal:"fight", action:"fight", confidence:.74 },
+    { text:"在卧室打盹", level:"ok", room:"卧室", pos:[80,22], action:"sleep", confidence:.90 },
+    { text:"长时间不动（需留意）", level:"warn", room:"卧室", pos:[82,18], abnormal:"still", action:"still", confidence:.70 },
   ],
   coco: [
-    { text:"在客厅玩逗猫棒", level:"ok", room:"客厅", pos:[55,48] },
-    { text:"在卧室晒太阳", level:"ok", room:"卧室", pos:[72,22] },
-    { text:"追逐米诺", level:"warn", room:"客厅", pos:[48,40] },
-    { text:"在猫砂区停留", level:"ok", room:"猫砂区", pos:[70,80] },
-    { text:"在餐区喝水", level:"ok", room:"餐区", pos:[34,82] },
+    { text:"在客厅玩逗猫棒", level:"ok", room:"客厅", pos:[55,48], action:"play", confidence:.87 },
+    { text:"在卧室晒太阳", level:"ok", room:"卧室", pos:[72,22], action:"sunbathe", confidence:.90 },
+    { text:"追逐米诺", level:"warn", room:"客厅", pos:[48,40], action:"chase", confidence:.66 },
+    { text:"在猫砂区停留", level:"ok", room:"猫砂区", pos:[70,80], action:"litter", confidence:.90 },
+    { text:"在餐区喝水", level:"ok", room:"餐区", pos:[34,82], action:"drink", confidence:.85 },
   ]
 };
 
@@ -539,8 +568,8 @@ const feedItems = [
 
 let alerts = [
   { id:"a1", pet:"mino", time:"11:05", type:"vomit", title:"疑似呕吐", level:"danger", desc:"检测到连续腹部收缩+液体喷溅动作" },
-  { id:"a2", pet:"mino", time:"14:10", type:"fight", title:"疑似打架", level:"danger", desc:"检测到高强度追逐+尖叫声峰值" },
-  { id:"a3", pet:"mino", time:"14:50", type:"still", title:"长时间不动", level:"warn", desc:"静止超过 90 分钟" },
+  { id:"a2", pet:"mino", time:"14:10", type:"fight", level:"danger", title:"疑似打架", desc:"检测到高强度追逐+尖叫声峰值" },
+  { id:"a3", pet:"mino", time:"14:50", type:"still", level:"warn", title:"长时间不动", desc:"静止超过 90 分钟" },
 ];
 
 /* -----------------------------
@@ -551,13 +580,248 @@ let activePet = pets[0].id;
 let activeCam = "living";
 let behaviorIdx = 0;
 let trail = [];
+let recentContext = []; // 用于 LLM 文案的上下文“记忆”
+
+// 今日统计（每只宠物独立）
+let dailyStats = {
+  mino: initDailyStats(),
+  coco: initDailyStats()
+};
+
+function initDailyStats(){
+  return {
+    rooms: new Set(),
+    actions: {},        // action -> count
+    abnormal: 0,
+    motionBursts: 0,    // chase/play 计数
+    litter: 0,
+    drinkEat: 0,
+    restSleep: 0,
+    lastAbnormal: null,
+    lastAction: null,
+    startTs: Date.now()
+  };
+}
+
+/* -----------------------------
+   Helpers
+----------------------------- */
+const $ = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+const rnd = arr => arr[Math.floor(Math.random()*arr.length)];
+const pct = (x)=> Math.round(x*100);
+
+/* -----------------------------
+   LLM-style narration engine
+----------------------------- */
+const llmTemplates = {
+  openers: [
+    "我这边看到，",
+    "现在画面里，",
+    "从追踪结果来看，",
+    "结合刚才的行为轨迹，",
+    "初步判断是：",
+  ],
+  hedges: [
+    "大概率",
+    "看起来像是",
+    "比较可能是",
+    "倾向于认为是",
+    "不排除是",
+  ],
+  normalInsights: {
+    patrol: [
+      "在{room}范围内来回巡视，节奏比较放松。",
+      "活动状态正常，像是在熟悉环境或找玩具。",
+    ],
+    sniff_food: [
+      "围着食盆探查气味，暂时没有明显进食动作。",
+      "像是在确认有没有新食物或零食。",
+    ],
+    play: [
+      "兴奋度上升，动作轻快，属于正常玩耍。",
+      "看起来心情不错，探索欲比较强。",
+    ],
+    sleep: [
+      "进入浅睡/打盹阶段，呼吸和体态都很平稳。",
+      "睡姿放松，属于安心休息。",
+    ],
+    rest: [
+      "趴卧休息中，状态平稳。",
+      "短时休整，可能玩累了。",
+    ],
+    sunbathe: [
+      "在{room}晒太阳，停留时间偏长但属于常见行为。",
+      "放松取暖中，看起来很舒适。",
+    ],
+    litter: [
+      "如厕行为完成得比较顺畅，停留时长正常。",
+      "本次猫砂盆停留属于常规节奏。",
+    ],
+    drink: [
+      "在{room}补水，持续时间正常。",
+      "饮水频率符合日常水平。",
+    ],
+    chase: [
+      "出现短时高速追逐/奔跑，强度略高。",
+      "可能是在自嗨跑酷，也可能和另一只猫互动。",
+    ]
+  },
+  abnormalInsights: {
+    vomit: [
+      "检测到连续腹部收缩与头部前伸，{hedge}是吐毛球或轻度呕吐。",
+      "症状持续时间不长，但建议今天留意饮食与精神状态。",
+    ],
+    fight: [
+      "两只猫的距离快速拉近+对峙姿态明显，{hedge}发生了冲突。",
+      "如果你家有原住民/新猫磨合期，建议关注是否形成持续压力。",
+    ],
+    still: [
+      "静止时间已超过阈值，{hedge}是休息过久或情绪低落。",
+      "如果同时伴随食欲下降/躲藏增多，再考虑就医评估。",
+    ]
+  },
+  endings: [
+    "你可以先不用太焦虑，我会继续盯着。",
+    "如果想，我也可以把这段自动剪成高光给你回看。",
+    "需要我把最近 1 小时的行为做个小结吗？",
+    "我会继续观察是否出现重复异常。",
+  ]
+};
+
+function llmNarrate(b){
+  const petName = pets.find(p=>p.id===activePet)?.name || "它";
+  const opener = rnd(llmTemplates.openers);
+  const hedge = rnd(llmTemplates.hedges);
+
+  let body = "";
+  if(b.abnormal){
+    const arr = llmTemplates.abnormalInsights[b.action] || llmTemplates.abnormalInsights[b.abnormal] || [];
+    body = arr.map(s=>s.replace("{hedge}", hedge).replace("{room}", b.room)).join(" ");
+  }else{
+    const arr = llmTemplates.normalInsights[b.action] || [];
+    body = rnd(arr).replace("{room}", b.room);
+  }
+
+  let contextLine = "";
+  const last = recentContext[recentContext.length-1];
+  if(last && last.room !== b.room){
+    contextLine = `它刚刚从${last.room}移动到${b.room}，动线比较连贯。`;
+  }else if(last && last.action === b.action){
+    contextLine = `这个行为模式持续了一小段时间，属于稳定状态。`;
+  }
+
+  const confLine = `识别置信度约 ${pct(b.confidence || 0.75)}%。`;
+  const ending = rnd(llmTemplates.endings);
+
+  return `${opener}${petName}${body} ${contextLine} ${confLine} ${ending}`.trim();
+}
+
+// 今日小结模板
+const dailySummaryTemplates = {
+  openers: [
+    "今天到目前为止，{pet}整体状态我觉得挺不错的。",
+    "我把{pet}今天的行为简单拼了一下：",
+    "截止现在，{pet}今天的生活节奏大概是这样——",
+    "先给你一个简短但有信息量的小结："
+  ],
+  energy: [
+    "活跃度偏高，像是精力很足。",
+    "活跃度中等，节奏比较健康。",
+    "整体比较安静，可能在休息回血。"
+  ],
+  risk: [
+    "暂时没看到明显异常，你可以比较放心。",
+    "有{n}次异常信号，但都属于可观察范围。",
+    "异常信号偏多（{n}次），建议今天多留意。"
+  ],
+  endings: [
+    "如果你愿意，我可以晚上再给你一版日终总结。",
+    "你想我把异常片段打包成一个回放合集吗？",
+    "我会继续盯着，有情况第一时间推给你。"
+  ]
+};
+
+function updateDailyStats(b){
+  const s = dailyStats[activePet] || (dailyStats[activePet]=initDailyStats());
+  s.rooms.add(b.room);
+  s.actions[b.action] = (s.actions[b.action]||0) + 1;
+  s.lastAction = b.action;
+
+  if(["chase","play"].includes(b.action)) s.motionBursts++;
+  if(b.action==="litter") s.litter++;
+  if(["drink","sniff_food"].includes(b.action)) s.drinkEat++;
+  if(["rest","sleep","sunbathe"].includes(b.action)) s.restSleep++;
+
+  if(b.abnormal){
+    s.abnormal++;
+    s.lastAbnormal = b.abnormal;
+  }
+}
+
+function llmDailySummary(petId){
+  const petName = pets.find(p=>p.id===petId)?.name || "它";
+  const s = dailyStats[petId] || initDailyStats();
+
+  const rooms = Array.from(s.rooms);
+  const roomText = rooms.length ? rooms.join("、") : "主要活动在家中";
+
+  const energyIdx =
+    s.motionBursts >= 3 ? 0 :
+    s.motionBursts >= 1 ? 1 : 2;
+
+  const riskText = dailySummaryTemplates.risk[
+    s.abnormal === 0 ? 0 :
+    s.abnormal <= 2 ? 1 : 2
+  ].replace("{n}", s.abnormal);
+
+  const topAction = Object.entries(s.actions)
+    .sort((a,b)=>b[1]-a[1])[0]?.[0];
+
+  const actionCN = {
+    patrol:"巡视", sniff_food:"闻食盆", play:"玩耍", sleep:"睡觉",
+    rest:"休息", sunbathe:"晒太阳", litter:"如厕", drink:"喝水",
+    chase:"追逐/跑酷", fight:"冲突", vomit:"呕吐", still:"静止"
+  }[topAction] || "日常活动";
+
+  const opener = rnd(dailySummaryTemplates.openers).replace("{pet}", petName);
+  const energyLine = dailySummaryTemplates.energy[energyIdx];
+  const ending = rnd(dailySummaryTemplates.endings);
+
+  const conf = Math.max(0.68, Math.min(0.92, 0.7 + (s.actions[topAction]||0)/12));
+  const confLine = `综合置信度约 ${pct(conf)}%。`;
+
+  let extra = "";
+  if(s.lastAbnormal==="vomit") extra = "今天有过一次疑似呕吐，我建议观察食欲和精神。";
+  if(s.lastAbnormal==="fight") extra = "今天出现过冲突信号，若是磨合期可考虑减少碰面压力。";
+  if(s.lastAbnormal==="still") extra = "今天有过长时间静止段，如果晚些时候还不活跃再关注。";
+
+  return [
+    opener,
+    `主要活动区域：${roomText}。`,
+    `最常见的行为是「${actionCN}」，累计 ${s.actions[topAction]||1} 次。`,
+    `运动/追逐峰值 ${s.motionBursts} 次；如厕 ${s.litter} 次；饮食/饮水相关 ${s.drinkEat} 次；休息/睡眠相关 ${s.restSleep} 次。`,
+    energyLine,
+    riskText,
+    extra,
+    confLine,
+    ending
+  ].filter(Boolean).join(" ");
+}
+
+function renderDailySummary(){
+  const el = $("#dailySummary");
+  if(!el) return;
+  el.textContent = llmDailySummary(activePet);
+
+  const st = dailyStats[activePet];
+  const mins = Math.floor((Date.now()-st.startTs)/60000);
+  $("#summaryTime").textContent = `已跟踪 ${mins} 分钟`;
+}
 
 /* -----------------------------
    Init UI
 ----------------------------- */
-const $ = s => document.querySelector(s);
-const $$ = s => Array.from(document.querySelectorAll(s));
-
 function initPets(){
   const strip = $("#petStrip");
   strip.innerHTML = "";
@@ -613,11 +877,14 @@ function showTab(tab){
 function setActivePet(petId){
   activePet = petId;
   behaviorIdx = 0;
+  recentContext = [];
+  dailyStats[petId] = initDailyStats();
   initPets();
   updateBehavior(true);
   renderFeed();
   renderAlerts();
   updateLocationFromBehavior();
+  renderDailySummary();
 }
 
 function setActiveCam(camKey){
@@ -637,22 +904,36 @@ function updateBehavior(force=false){
   if(!list || !list.length) return;
   const b = list[behaviorIdx % list.length];
 
+  // 行为短标签
   const chip = $("#behaviorChip");
   chip.classList.remove("ok","warn","danger");
   chip.classList.add(b.level);
   $("#behaviorText").textContent = b.text;
 
-  // Tracking box move (simulate follow)
+  // 追踪框移动
   const box = $("#trackBox");
-  const left = 20 + (b.pos[0]/100)*60;  // 20%-80%
-  const top  = 18 + (b.pos[1]/100)*50;  // 18%-68%
+  const left = 20 + (b.pos[0]/100)*60;
+  const top  = 18 + (b.pos[1]/100)*50;
   box.style.left = left + "%";
   box.style.top  = top + "%";
   $("#trackLabel").textContent = "追踪：" + pets.find(p=>p.id===activePet).name;
 
   $("#locPetName").textContent = pets.find(p=>p.id===activePet).name + " · 现在在" + b.room;
 
-  // If abnormal, add to preview (demo effect)
+  // ✅ LLM 风格实时解读
+  const n = llmNarrate(b);
+  const narrEl = $("#aiNarration");
+  if(narrEl) narrEl.textContent = n;
+
+  // 上下文
+  recentContext.push({room:b.room, action:b.action});
+  recentContext = recentContext.slice(-6);
+
+  // 今日统计 + 小结刷新
+  updateDailyStats(b);
+  renderDailySummary();
+
+  // 异常自动入告警（demo）
   if(b.abnormal && !force){
     const now = new Date();
     const hh = String(now.getHours()).padStart(2,"0");
@@ -663,7 +944,7 @@ function updateBehavior(force=false){
       type:b.abnormal,
       title: b.abnormal==="vomit"?"疑似呕吐":(b.abnormal==="fight"?"疑似打架":"长时间不动"),
       level: b.level==="danger"?"danger":"warn",
-      desc: "AI 识别到异常行为（demo）"
+      desc: llmNarrate(b)
     };
     alerts.unshift(newAlert);
     alerts = alerts.slice(0,6);
@@ -680,7 +961,7 @@ function tickBehaviors(){
 }
 
 /* -----------------------------
-   Location simulation (floorplan)
+   Location simulation
 ----------------------------- */
 const roomAnchors = {
   "客厅":[30,35],
@@ -705,7 +986,6 @@ function movePetDot(xPct, yPct){
   dot.style.left = x + "px";
   dot.style.top  = y + "px";
 
-  // trail
   trail.push([x,y]);
   trail = trail.slice(-8);
   renderTrail();
@@ -730,12 +1010,10 @@ function initTimeSlider(){
   slider.oninput = ()=>{
     const val = Number(slider.value);
     $("#timeLabel").textContent = String(val).padStart(2,"0")+":00";
-    // deterministic pseudo path by hour + pet
     const seed = val*7 + (activePet==="mino"?3:11);
     const rooms = ["客厅","卧室","餐区","猫砂区"];
     const room = rooms[seed % rooms.length];
     const anchor = roomAnchors[room];
-    // add small jitter
     const jitter = (n)=> n + (seed%5 - 2)*2;
     movePetDot(jitter(anchor[0]), jitter(anchor[1]));
     $("#locPetName").textContent = pets.find(p=>p.id===activePet).name + " · " + room;
@@ -754,22 +1032,25 @@ function renderFeed(){
     return it.pet===activePet && it.type===activeFilter;
   });
 
-  list.innerHTML = shown.map(it=>`
-    <div class="feed-item">
-      <div class="feed-ic">${it.icon}</div>
-      <div class="feed-body">
-        <div class="feed-title">${it.t} · ${it.title}</div>
-        <div class="feed-meta">${it.desc}</div>
-        ${it.level?`<div class="feed-meta" style="color:${it.level==="danger"?"var(--danger)":"var(--warn)"};font-weight:900;">${it.level==="danger"?"高风险":"需关注"}</div>`:""}
-        <div class="feed-actions">
-          ${it.clip?`<div class="feed-btn" data-clip="${it.t}">查看片段</div>`:""}
-          <div class="feed-btn ghost" data-jump="${it.t}">定位联动</div>
+  list.innerHTML = shown.map(it=>{
+    const petName = pets.find(p=>p.id===it.pet)?.name || "";
+    const llmLine = `AI解读：${petName}${it.desc}（demo）`;
+    return `
+      <div class="feed-item">
+        <div class="feed-ic">${it.icon}</div>
+        <div class="feed-body">
+          <div class="feed-title">${it.t} · ${it.title}</div>
+          <div class="feed-meta">${llmLine}</div>
+          ${it.level?`<div class="feed-meta" style="color:${it.level==="danger"?"var(--danger)":"var(--warn)"};font-weight:900;">${it.level==="danger"?"高风险":"需关注"}</div>`:""}
+          <div class="feed-actions">
+            ${it.clip?`<div class="feed-btn" data-clip="${it.t}">查看片段</div>`:""}
+            <div class="feed-btn ghost" data-jump="${it.t}">定位联动</div>
+          </div>
         </div>
       </div>
-    </div>
-  `).join("");
+    `;
+  }).join("");
 
-  // actions
   $$("[data-clip]").forEach(b=>{
     b.onclick=()=>toast("打开 "+b.dataset.clip+" 证据回放（demo）");
   });
@@ -812,7 +1093,6 @@ function renderAlerts(){
 
   list.innerHTML = alerts.filter(a=>a.pet===activePet).map(a=>alertCardHTML(a,false)).join("");
 
-  // bind actions
   $$("[data-alert-clip]").forEach(b=>{
     b.onclick=()=>toast("播放 "+b.dataset.alertClip+" 告警片段（demo）");
   });
@@ -904,6 +1184,7 @@ initAlertsModal();
 initSwitches();
 renderFeed();
 renderAlerts();
+renderDailySummary();
 updateClock();
 setActiveCam(activeCam);
 
@@ -912,10 +1193,17 @@ $("#btnReplay").onclick=()=>toast("回放最近 10 秒（demo）");
 $("#btnCall").onclick=()=>toast("已发出呼叫：'咪咪过来～'（demo）");
 $("#btnSnap").onclick=()=>toast("截图已保存到相册（demo）");
 
+const refreshBtn = $("#btnRefreshSummary");
+if(refreshBtn) refreshBtn.onclick = ()=> {
+  renderDailySummary();
+  toast("小结已刷新（demo）");
+};
+
+const shareBtn = $("#btnShareSummary");
+if(shareBtn) shareBtn.onclick = ()=>toast("已生成分享图（demo）");
+
 // run loop
 tickBehaviors();
 </script>
 </body>
 </html>
-
-
