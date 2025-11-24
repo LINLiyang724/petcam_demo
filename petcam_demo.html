@@ -1,0 +1,919 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+  <title>PetCam AI Demo (H5)</title>
+  <style>
+    :root{
+      --bg:#F7F7F9;
+      --card:#fff;
+      --ink:#121317;
+      --muted:#6B7280;
+      --brand:#FF8A5B;
+      --brand2:#FFD2C2;
+      --ok:#22C55E;
+      --warn:#F59E0B;
+      --danger:#EF4444;
+      --line:#ECEEF2;
+      --radius:18px;
+      --shadow: 0 10px 30px rgba(18,19,23,.08);
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; font-family: system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
+      background:var(--bg); color:var(--ink);
+    }
+    .app{
+      max-width:430px; margin:0 auto; min-height:100vh; position:relative;
+      padding-bottom:86px;
+    }
+    header{
+      position:sticky; top:0; z-index:5; background:linear-gradient(#fff, rgba(255,255,255,.9));
+      padding:14px 16px 8px 16px; border-bottom:1px solid var(--line);
+      backdrop-filter: blur(6px);
+    }
+    .topbar{display:flex; align-items:center; justify-content:space-between;}
+    .logo{
+      display:flex; align-items:center; gap:8px; font-weight:800; letter-spacing:.3px;
+    }
+    .logo-dot{
+      width:10px;height:10px;border-radius:50%;background:var(--brand);box-shadow:0 0 0 4px var(--brand2);
+    }
+    .pill{
+      font-size:12px;color:#fff;background:var(--ink); padding:6px 10px; border-radius:999px; display:inline-flex; gap:6px; align-items:center;
+    }
+    .content{padding:12px 12px 0 12px;}
+    .card{
+      background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow);
+      padding:12px; margin-bottom:12px;
+    }
+    .card-title{
+      font-weight:700; font-size:15px; display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;
+    }
+    .sub{color:var(--muted); font-size:12px;}
+    /* Tabs */
+    .tabs{
+      position:fixed; bottom:0; left:0; right:0; z-index:10;
+      background:#fff; border-top:1px solid var(--line);
+      padding:8px 10px calc(8px + env(safe-area-inset-bottom));
+      display:flex; justify-content:space-around; gap:6px;
+    }
+    .tab-btn{
+      flex:1; display:flex; flex-direction:column; align-items:center; gap:4px;
+      padding:8px 0; border-radius:12px; color:var(--muted); font-size:12px; font-weight:600;
+    }
+    .tab-btn.active{ color:var(--ink); background:#FFF4F0;}
+    .tab-ic{
+      width:22px;height:22px;border-radius:7px;background:#F3F4F6; display:grid; place-items:center; font-size:13px;
+    }
+    .tab-btn.active .tab-ic{ background:var(--brand2); }
+
+    /* Live / dashboard */
+    .live-wrap{display:grid; grid-template-columns:1fr; gap:10px;}
+    .live-hero{
+      position:relative; border-radius:16px; overflow:hidden; height:220px; background:#111;
+      display:flex; align-items:center; justify-content:center; color:#fff;
+    }
+    .live-hero video{width:100%; height:100%; object-fit:cover; filter:saturate(1.05) contrast(1.05);}
+    .live-overlay{
+      position:absolute; inset:0; background:
+        linear-gradient(180deg, rgba(0,0,0,.35), transparent 35%),
+        linear-gradient(0deg, rgba(0,0,0,.45), transparent 45%);
+      pointer-events:none;
+    }
+    .track-box{
+      position:absolute; border:2px solid rgba(255,255,255,.9); border-radius:10px;
+      width:120px; height:90px; left:40%; top:35%; transform:translate(-50%,-50%);
+      box-shadow:0 0 0 2px rgba(255,138,91,.35) inset;
+      transition:all .7s ease;
+    }
+    .track-label{
+      position:absolute; left:8px; top:8px; font-size:12px; font-weight:700; background:rgba(0,0,0,.6);
+      padding:4px 6px; border-radius:8px;
+    }
+    .cam-switch{
+      position:absolute; right:8px; top:8px; display:flex; gap:6px;
+    }
+    .cam-btn{
+      font-size:11px; font-weight:700; color:#fff; background:rgba(0,0,0,.55);
+      padding:6px 8px; border-radius:999px; border:1px solid rgba(255,255,255,.25);
+      cursor:pointer; user-select:none;
+    }
+    .cam-btn.active{ background:rgba(255,138,91,.9); border-color:transparent; }
+
+    .live-status{
+      position:absolute; left:8px; bottom:8px; display:flex; gap:8px; align-items:center;
+    }
+    .dot{width:8px;height:8px;border-radius:50%;background:var(--ok); box-shadow:0 0 10px rgba(34,197,94,.9);}
+    .status-pill{
+      background:rgba(0,0,0,.6); padding:6px 8px; border-radius:999px; font-size:12px; font-weight:700;
+      display:flex; gap:6px; align-items:center;
+    }
+    .behavior-chip{
+      position:absolute; left:50%; bottom:50px; transform:translateX(-50%);
+      background:rgba(255,255,255,.95); color:#111; padding:8px 12px; border-radius:999px;
+      display:flex; gap:6px; align-items:center; font-size:13px; font-weight:800;
+      box-shadow:0 8px 16px rgba(0,0,0,.2);
+      transition:all .4s ease; white-space:nowrap;
+    }
+    .behavior-chip .b-dot{width:7px;height:7px;border-radius:50%;}
+    .behavior-chip.ok .b-dot{background:var(--ok)}
+    .behavior-chip.warn .b-dot{background:var(--warn)}
+    .behavior-chip.danger .b-dot{background:var(--danger)}
+
+    .live-actions{display:flex; gap:8px; margin-top:8px;}
+    .btn{
+      flex:1; padding:10px 0; border-radius:12px; background:#111; color:#fff; font-weight:800; font-size:13px;
+      display:grid; place-items:center; cursor:pointer; user-select:none;
+    }
+    .btn.ghost{background:#FFF4F0;color:#111;border:1px solid #FFD7C8}
+    .mini-row{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+    .metric{display:flex; align-items:center; justify-content:space-between; gap:8px;}
+    .metric .big{font-size:20px;font-weight:900;}
+    .metric .tag{font-size:11px;color:var(--muted);font-weight:700;}
+    .metric .trend{font-size:12px;font-weight:800;color:var(--ok);}
+    .metric .trend.warn{color:var(--warn);}
+
+    .pet-strip{display:flex; gap:8px; overflow:auto; padding-bottom:2px;}
+    .pet-chip{
+      min-width:84px; border:1px solid var(--line); border-radius:14px; padding:8px; display:flex; gap:8px; align-items:center;
+      cursor:pointer; background:#fff;
+    }
+    .pet-chip.active{ border-color:#FFB59B; background:#FFF4F0; }
+    .pet-avatar{
+      width:34px;height:34px;border-radius:12px;background:#F3F4F6; display:grid; place-items:center; font-weight:900;
+    }
+    .pet-meta{display:flex; flex-direction:column; line-height:1.1;}
+    .pet-name{font-weight:900; font-size:13px;}
+    .pet-state{font-size:11px; color:var(--muted); font-weight:700;}
+
+    /* Location */
+    .floorplan{
+      position:relative; height:260px; border-radius:16px; background:#FAFAFB; border:1px dashed #E5E7EB; overflow:hidden;
+      display:grid; place-items:center;
+    }
+    .room{
+      position:absolute; border:1.5px solid #E5E7EB; border-radius:12px; background:#fff;
+      display:grid; place-items:center; font-size:12px; font-weight:800; color:#444;
+    }
+    .fp-living{left:12px; top:12px; width:58%; height:56%;}
+    .fp-bed{right:12px; top:12px; width:36%; height:38%;}
+    .fp-dining{left:12px; bottom:12px; width:40%; height:34%;}
+    .fp-litter{right:12px; bottom:12px; width:52%; height:46%;}
+    .pet-dot{
+      position:absolute; width:14px;height:14px;border-radius:50%; background:var(--brand);
+      transform:translate(-50%,-50%); box-shadow:0 8px 18px rgba(255,138,91,.7);
+      transition:all .6s ease;
+    }
+    .trail{
+      position:absolute; width:6px;height:6px;border-radius:50%; background:#FFB59B; opacity:.7;
+      transform:translate(-50%,-50%); transition:all .6s ease;
+    }
+    .timebar{display:flex; align-items:center; gap:8px;}
+    input[type="range"]{width:100%;}
+    .legend{display:flex; gap:8px; flex-wrap:wrap;}
+    .legend .chip{font-size:11px;font-weight:800;color:#111;background:#FFF4F0;border:1px solid #FFD7C8;padding:5px 8px;border-radius:999px;}
+
+    /* Feed */
+    .feed-item{
+      display:flex; gap:10px; padding:10px 6px; border-bottom:1px dashed var(--line);
+    }
+    .feed-item:last-child{border-bottom:none;}
+    .feed-ic{
+      width:40px;height:40px;border-radius:12px;background:#FFF4F0; display:grid; place-items:center; font-size:18px;
+      flex:0 0 auto;
+    }
+    .feed-body{flex:1;}
+    .feed-title{font-weight:900; font-size:14px;}
+    .feed-meta{font-size:12px;color:var(--muted);font-weight:700;margin-top:3px;}
+    .feed-actions{margin-top:6px; display:flex; gap:6px;}
+    .feed-btn{
+      font-size:12px; font-weight:800; background:#111; color:#fff; padding:6px 8px; border-radius:10px; cursor:pointer;
+    }
+    .feed-btn.ghost{background:#F3F4F6;color:#111;}
+
+    /* Alerts modal */
+    .modal{
+      position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:100; display:none; align-items:flex-end;
+    }
+    .modal.show{display:flex;}
+    .sheet{
+      width:100%; max-width:430px; margin:0 auto; background:#fff; border-radius:18px 18px 0 0; padding:12px; max-height:85vh; overflow:auto;
+      box-shadow:var(--shadow);
+      animation:up .18s ease;
+    }
+    @keyframes up{from{transform:translateY(20px);opacity:.6} to{transform:none;opacity:1}}
+    .alert-card{
+      border:1px solid var(--line); border-radius:14px; padding:10px; display:flex; gap:10px; margin-bottom:8px;
+    }
+    .alert-level{
+      font-size:11px; font-weight:900; padding:3px 6px; border-radius:999px; color:#fff; height:fit-content;
+    }
+    .lvl-danger{background:var(--danger)}
+    .lvl-warn{background:var(--warn)}
+    .lvl-info{background:#111}
+    .alert-title{font-weight:900; font-size:14px;}
+    .alert-desc{font-size:12px;color:var(--muted);font-weight:700;margin-top:2px;}
+    .alert-actions{margin-top:6px; display:flex; gap:6px; flex-wrap:wrap;}
+    .small-btn{
+      font-size:12px; font-weight:900; padding:6px 8px; border-radius:10px; cursor:pointer;
+      background:#111;color:#fff;
+    }
+    .small-btn.ghost{background:#F3F4F6;color:#111;}
+
+    /* Simple switches */
+    .row{display:flex; align-items:center; justify-content:space-between; padding:10px 0; border-bottom:1px dashed var(--line);}
+    .row:last-child{border-bottom:none;}
+    .switch{
+      width:44px;height:26px;border-radius:999px;background:#E5E7EB; position:relative; cursor:pointer;
+    }
+    .switch::after{
+      content:""; position:absolute; top:3px; left:3px; width:20px;height:20px;border-radius:50%; background:#fff; transition:all .2s ease;
+      box-shadow:0 2px 6px rgba(0,0,0,.15);
+    }
+    .switch.on{background:#FFD2C2;}
+    .switch.on::after{left:21px; background:var(--brand);}
+
+    .hidden{display:none;}
+    .section-title{font-weight:900; font-size:16px; margin:2px 0 8px;}
+    .tagline{font-size:12px; color:var(--muted); font-weight:700;}
+  </style>
+</head>
+<body>
+<div class="app" id="app">
+
+  <header>
+    <div class="topbar">
+      <div class="logo">
+        <div class="logo-dot"></div>
+        <div>PetCam AI</div>
+        <span class="sub">H5 Demo</span>
+      </div>
+      <div class="pill" id="headerPill">客厅摄像头 · 追踪中</div>
+    </div>
+  </header>
+
+  <main class="content">
+
+    <!-- TAB 1: 看护 -->
+    <section id="tab-watch">
+
+      <div class="card">
+        <div class="card-title">
+          <span>实时看护</span>
+          <span class="sub" id="liveTime">今天 15:00</span>
+        </div>
+
+        <div class="live-wrap">
+          <div class="live-hero">
+            <video id="liveVideo" autoplay muted loop playsinline>
+              <!-- public domain placeholder -->
+              <source src="https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4" type="video/mp4">
+            </video>
+            <div class="live-overlay"></div>
+
+            <div class="cam-switch">
+              <div class="cam-btn active" data-cam="living">客厅</div>
+              <div class="cam-btn" data-cam="bed">卧室</div>
+            </div>
+
+            <div class="track-box" id="trackBox">
+              <div class="track-label" id="trackLabel">追踪：米诺</div>
+            </div>
+
+            <div class="behavior-chip ok" id="behaviorChip">
+              <div class="b-dot"></div>
+              <div id="behaviorText">正在巡视客厅</div>
+            </div>
+
+            <div class="live-status">
+              <div class="status-pill"><span class="dot"></span><span id="trackStatus">追踪中</span></div>
+              <div class="status-pill" id="signalPill">信号良好</div>
+            </div>
+          </div>
+
+          <div class="live-actions">
+            <div class="btn ghost" id="btnReplay">回放10秒</div>
+            <div class="btn" id="btnCall">呼叫宠物</div>
+            <div class="btn ghost" id="btnSnap">截图</div>
+          </div>
+
+          <div class="mini-row">
+            <div class="card" style="box-shadow:none;border:1px solid var(--line);margin:0;">
+              <div class="metric">
+                <div>
+                  <div class="tag">今日活动</div>
+                  <div class="big" id="mActivity">72</div>
+                </div>
+                <div class="trend" id="mActivityTrend">+12%</div>
+              </div>
+            </div>
+            <div class="card" style="box-shadow:none;border:1px solid var(--line);margin:0;">
+              <div class="metric">
+                <div>
+                  <div class="tag">睡眠时长</div>
+                  <div class="big" id="mSleep">9.3h</div>
+                </div>
+                <div class="trend warn" id="mSleepTrend">偏少</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="height:10px"></div>
+        <div class="card-title" style="margin-bottom:6px;">
+          <span>多宠追踪</span>
+          <span class="sub">自动识别宠物并切换追踪框</span>
+        </div>
+        <div class="pet-strip" id="petStrip"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">
+          <span>今日异常快览</span>
+          <span class="sub" id="alertCount">2 条新告警</span>
+        </div>
+        <div id="alertPreview"></div>
+        <div class="btn ghost" id="openAlerts">查看全部告警</div>
+      </div>
+
+    </section>
+
+
+    <!-- TAB 2: 位置 -->
+    <section id="tab-location" class="hidden">
+
+      <div class="card">
+        <div class="card-title">
+          <span>家庭定位</span>
+          <span class="sub" id="locPetName">米诺 · 现在在客厅</span>
+        </div>
+
+        <div class="floorplan" id="floorplan">
+          <div class="room fp-living">客厅</div>
+          <div class="room fp-bed">卧室</div>
+          <div class="room fp-dining">餐区</div>
+          <div class="room fp-litter">猫砂区</div>
+
+          <div class="pet-dot" id="petDot"></div>
+          <div id="trailLayer"></div>
+        </div>
+
+        <div style="height:10px"></div>
+        <div class="timebar">
+          <span class="sub" id="timeLabel">08:00</span>
+          <input id="timeSlider" type="range" min="0" max="24" value="8" step="1">
+          <span class="sub">24:00</span>
+        </div>
+        <div class="sub" style="margin-top:6px;">
+          拖动时间轴查看对应位置（视觉追踪定位）
+        </div>
+
+        <div style="height:10px"></div>
+        <div class="legend">
+          <div class="chip" id="stayStats">卧室 45% · 客厅 30% · 餐区 15% · 猫砂区 10%</div>
+          <div class="chip">定位精度：约 1–2m（光照/遮挡影响）</div>
+        </div>
+
+      </div>
+
+      <div class="card">
+        <div class="card-title">
+          <span>多摄像头覆盖</span>
+          <span class="sub" id="camCoverage">当前：客厅摄像头优先</span>
+        </div>
+        <div style="display:flex; gap:8px;">
+          <div class="btn ghost camPick active" data-cam="living">客厅视角</div>
+          <div class="btn ghost camPick" data-cam="bed">卧室视角</div>
+        </div>
+      </div>
+
+    </section>
+
+
+    <!-- TAB 3: 事件 -->
+    <section id="tab-feed" class="hidden">
+
+      <div class="card">
+        <div class="card-title">
+          <span>今日事件时间线</span>
+          <span class="sub">自动生成行为摘要，可一键回放</span>
+        </div>
+
+        <div style="display:flex; gap:6px; margin-bottom:8px;">
+          <div class="pill" style="background:#FFF4F0;color:#111;border:1px solid #FFD7C8;" data-filter="all">全部</div>
+          <div class="pill" style="background:#fff;color:#111;border:1px solid var(--line);" data-filter="normal">吃喝/如厕</div>
+          <div class="pill" style="background:#fff;color:#111;border:1px solid var(--line);" data-filter="motion">运动/追逐</div>
+          <div class="pill" style="background:#fff;color:#111;border:1px solid var(--line);" data-filter="abnormal">异常</div>
+        </div>
+
+        <div id="feedList"></div>
+      </div>
+
+    </section>
+
+
+    <!-- TAB 4: 我的 -->
+    <section id="tab-me" class="hidden">
+
+      <div class="card">
+        <div class="section-title">宠物档案</div>
+        <div id="petProfiles"></div>
+        <div class="btn ghost" style="margin-top:8px;">+ 添加新宠物（demo）</div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">设备设置</div>
+
+        <div class="row">
+          <div>
+            <div style="font-weight:900;">自动追踪优先</div>
+            <div class="tagline">摄像头自动跟拍并聚焦宠物</div>
+          </div>
+          <div class="switch on" data-switch="track"></div>
+        </div>
+
+        <div class="row">
+          <div>
+            <div style="font-weight:900;">异常提醒</div>
+            <div class="tagline">打架/呕吐/长时间不动等</div>
+          </div>
+          <div class="switch on" data-switch="alert"></div>
+        </div>
+
+        <div class="row">
+          <div>
+            <div style="font-weight:900;">夜视增强</div>
+            <div class="tagline">低光环境识别效果更好</div>
+          </div>
+          <div class="switch" data-switch="night"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">关于本 Demo</div>
+        <div class="tagline">
+          这是 H5 原型，仅模拟：直播追踪、行为识别、定位轨迹、事件/告警。<br/>
+          后续可替换真实摄像头流与模型结果。
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- bottom tabs -->
+  <nav class="tabs">
+    <div class="tab-btn active" data-tab="watch">
+      <div class="tab-ic">🎥</div><div>看护</div>
+    </div>
+    <div class="tab-btn" data-tab="location">
+      <div class="tab-ic">🗺️</div><div>位置</div>
+    </div>
+    <div class="tab-btn" data-tab="feed">
+      <div class="tab-ic">📌</div><div>事件</div>
+    </div>
+    <div class="tab-btn" data-tab="me">
+      <div class="tab-ic">👤</div><div>我的</div>
+    </div>
+  </nav>
+
+</div>
+
+<!-- Alerts modal -->
+<div class="modal" id="alertsModal">
+  <div class="sheet">
+    <div class="card-title" style="margin-bottom:6px;">
+      <span>异常告警中心</span>
+      <div class="btn ghost" id="closeAlerts" style="flex:0 0 auto; padding:6px 10px; font-size:12px;">关闭</div>
+    </div>
+    <div class="sub" style="margin-bottom:10px;">点击告警查看 20 秒证据片段，并可标记误报</div>
+    <div id="alertsList"></div>
+  </div>
+</div>
+
+<script>
+/* -----------------------------
+   Demo data
+----------------------------- */
+const pets = [
+  { id:"mino", name:"米诺", emoji:"🐱", color:"#FF8A5B" },
+  { id:"coco", name:"可可", emoji:"🐱", color:"#F59E0B" }
+];
+
+const cams = {
+  living: { name:"客厅摄像头", video:"https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4" },
+  bed:    { name:"卧室摄像头", video:"https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4" }
+};
+
+const behaviors = {
+  mino: [
+    { text:"正在巡视客厅", level:"ok", room:"客厅", pos:[32,38] },
+    { text:"在餐区闻食盆", level:"ok", room:"餐区", pos:[25,78] },
+    { text:"快速奔跑（疑似追逐）", level:"warn", room:"客厅", pos:[44,46] },
+    { text:"进入猫砂盆（如厕）", level:"ok", room:"猫砂区", pos:[76,74] },
+    { text:"疑似呕吐（已录制片段）", level:"danger", room:"客厅", pos:[36,52], abnormal:"vomit" },
+    { text:"趴卧休息", level:"ok", room:"卧室", pos:[78,26] },
+    { text:"与另一只猫对峙（疑似打架）", level:"danger", room:"客厅", pos:[50,44], abnormal:"fight" },
+    { text:"在卧室打盹", level:"ok", room:"卧室", pos:[80,22] },
+    { text:"长时间不动（需留意）", level:"warn", room:"卧室", pos:[82,18], abnormal:"still" },
+  ],
+  coco: [
+    { text:"在客厅玩逗猫棒", level:"ok", room:"客厅", pos:[55,48] },
+    { text:"在卧室晒太阳", level:"ok", room:"卧室", pos:[72,22] },
+    { text:"追逐米诺", level:"warn", room:"客厅", pos:[48,40] },
+    { text:"在猫砂区停留", level:"ok", room:"猫砂区", pos:[70,80] },
+    { text:"在餐区喝水", level:"ok", room:"餐区", pos:[34,82] },
+  ]
+};
+
+const feedItems = [
+  { t:"08:12", pet:"mino", type:"normal", icon:"🚽", title:"在猫砂盆（2min）", desc:"识别到如厕行为，停留 2 分钟", clip:true },
+  { t:"09:40", pet:"mino", type:"motion", icon:"🏃", title:"快速奔跑（疑似追逐）", desc:"活动峰值持续 35 秒", clip:true },
+  { t:"11:05", pet:"mino", type:"abnormal", icon:"🤢", title:"呕吐异常", desc:"疑似毛球呕吐，持续约 8 秒", clip:true, level:"danger" },
+  { t:"13:22", pet:"coco", type:"normal", icon:"💧", title:"喝水（1min）", desc:"餐区饮水 1 分钟", clip:false },
+  { t:"14:10", pet:"mino", type:"abnormal", icon:"⚡", title:"疑似打架", desc:"与可可出现对峙追逐", clip:true, level:"danger" },
+  { t:"14:50", pet:"mino", type:"abnormal", icon:"🛑", title:"长时间不动", desc:"卧室静止 1.5 小时，建议关注", clip:true, level:"warn" },
+];
+
+let alerts = [
+  { id:"a1", pet:"mino", time:"11:05", type:"vomit", title:"疑似呕吐", level:"danger", desc:"检测到连续腹部收缩+液体喷溅动作" },
+  { id:"a2", pet:"mino", time:"14:10", type:"fight", title:"疑似打架", level:"danger", desc:"检测到高强度追逐+尖叫声峰值" },
+  { id:"a3", pet:"mino", time:"14:50", type:"still", title:"长时间不动", level:"warn", desc:"静止超过 90 分钟" },
+];
+
+/* -----------------------------
+   State
+----------------------------- */
+let activeTab = "watch";
+let activePet = pets[0].id;
+let activeCam = "living";
+let behaviorIdx = 0;
+let trail = [];
+
+/* -----------------------------
+   Init UI
+----------------------------- */
+const $ = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+
+function initPets(){
+  const strip = $("#petStrip");
+  strip.innerHTML = "";
+  pets.forEach(p=>{
+    const div = document.createElement("div");
+    div.className = "pet-chip" + (p.id===activePet?" active":"");
+    div.dataset.pet = p.id;
+    div.innerHTML = `
+      <div class="pet-avatar">${p.emoji}</div>
+      <div class="pet-meta">
+        <div class="pet-name">${p.name}</div>
+        <div class="pet-state">${p.id===activePet?"追踪中":"待机"}</div>
+      </div>`;
+    div.onclick = ()=>setActivePet(p.id);
+    strip.appendChild(div);
+  });
+
+  const profiles = $("#petProfiles");
+  profiles.innerHTML = pets.map(p=>`
+    <div class="row">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div class="pet-avatar">${p.emoji}</div>
+        <div>
+          <div style="font-weight:900;">${p.name}</div>
+          <div class="tagline">1 岁 · 矮脚米努特 · 已绝育</div>
+        </div>
+      </div>
+      <div class="sub">编辑</div>
+    </div>
+  `).join("");
+}
+
+function initTabs(){
+  $$(".tab-btn").forEach(btn=>{
+    btn.onclick=()=>{
+      activeTab = btn.dataset.tab;
+      $$(".tab-btn").forEach(b=>b.classList.toggle("active", b.dataset.tab===activeTab));
+      showTab(activeTab);
+    }
+  });
+}
+
+function showTab(tab){
+  $("#tab-watch").classList.toggle("hidden", tab!=="watch");
+  $("#tab-location").classList.toggle("hidden", tab!=="location");
+  $("#tab-feed").classList.toggle("hidden", tab!=="feed");
+  $("#tab-me").classList.toggle("hidden", tab!=="me");
+}
+
+/* -----------------------------
+   Live behaviors simulation
+----------------------------- */
+function setActivePet(petId){
+  activePet = petId;
+  behaviorIdx = 0;
+  initPets();
+  updateBehavior(true);
+  renderFeed();
+  renderAlerts();
+  updateLocationFromBehavior();
+}
+
+function setActiveCam(camKey){
+  activeCam = camKey;
+  $$(".cam-btn").forEach(b=>b.classList.toggle("active", b.dataset.cam===camKey));
+  $$(".camPick").forEach(b=>b.classList.toggle("active", b.dataset.cam===camKey));
+  $("#headerPill").textContent = cams[camKey].name + " · 追踪中";
+  $("#camCoverage").textContent = "当前：" + cams[camKey].name + "优先";
+  const v = $("#liveVideo");
+  v.pause();
+  v.querySelector("source").src = cams[camKey].video;
+  v.load(); v.play();
+}
+
+function updateBehavior(force=false){
+  const list = behaviors[activePet];
+  if(!list || !list.length) return;
+  const b = list[behaviorIdx % list.length];
+
+  const chip = $("#behaviorChip");
+  chip.classList.remove("ok","warn","danger");
+  chip.classList.add(b.level);
+  $("#behaviorText").textContent = b.text;
+
+  // Tracking box move (simulate follow)
+  const box = $("#trackBox");
+  const left = 20 + (b.pos[0]/100)*60;  // 20%-80%
+  const top  = 18 + (b.pos[1]/100)*50;  // 18%-68%
+  box.style.left = left + "%";
+  box.style.top  = top + "%";
+  $("#trackLabel").textContent = "追踪：" + pets.find(p=>p.id===activePet).name;
+
+  $("#locPetName").textContent = pets.find(p=>p.id===activePet).name + " · 现在在" + b.room;
+
+  // If abnormal, add to preview (demo effect)
+  if(b.abnormal && !force){
+    const now = new Date();
+    const hh = String(now.getHours()).padStart(2,"0");
+    const mm = String(now.getMinutes()).padStart(2,"0");
+    const newAlert = {
+      id:"a"+Math.random().toString(36).slice(2,7),
+      pet:activePet, time:`${hh}:${mm}`,
+      type:b.abnormal,
+      title: b.abnormal==="vomit"?"疑似呕吐":(b.abnormal==="fight"?"疑似打架":"长时间不动"),
+      level: b.level==="danger"?"danger":"warn",
+      desc: "AI 识别到异常行为（demo）"
+    };
+    alerts.unshift(newAlert);
+    alerts = alerts.slice(0,6);
+    renderAlerts();
+  }
+
+  updateLocationFromBehavior();
+  behaviorIdx++;
+}
+
+function tickBehaviors(){
+  updateBehavior(false);
+  setTimeout(tickBehaviors, 4200);
+}
+
+/* -----------------------------
+   Location simulation (floorplan)
+----------------------------- */
+const roomAnchors = {
+  "客厅":[30,35],
+  "卧室":[78,22],
+  "餐区":[25,80],
+  "猫砂区":[78,78]
+};
+
+function updateLocationFromBehavior(){
+  const b = behaviors[activePet][(behaviorIdx-1+behaviors[activePet].length)%behaviors[activePet].length];
+  if(!b) return;
+  movePetDot(b.pos[0], b.pos[1]);
+}
+
+function movePetDot(xPct, yPct){
+  const fp = $("#floorplan");
+  const dot = $("#petDot");
+  const rect = fp.getBoundingClientRect();
+  const x = rect.width * (xPct/100);
+  const y = rect.height * (yPct/100);
+
+  dot.style.left = x + "px";
+  dot.style.top  = y + "px";
+
+  // trail
+  trail.push([x,y]);
+  trail = trail.slice(-8);
+  renderTrail();
+}
+
+function renderTrail(){
+  const layer = $("#trailLayer");
+  layer.innerHTML = "";
+  trail.forEach((p,i)=>{
+    const d = document.createElement("div");
+    d.className="trail";
+    d.style.left = p[0]+"px";
+    d.style.top  = p[1]+"px";
+    d.style.opacity = (i+1)/trail.length * .7;
+    d.style.transform = "translate(-50%,-50%) scale("+(0.6 + i*0.08)+")";
+    layer.appendChild(d);
+  });
+}
+
+function initTimeSlider(){
+  const slider = $("#timeSlider");
+  slider.oninput = ()=>{
+    const val = Number(slider.value);
+    $("#timeLabel").textContent = String(val).padStart(2,"0")+":00";
+    // deterministic pseudo path by hour + pet
+    const seed = val*7 + (activePet==="mino"?3:11);
+    const rooms = ["客厅","卧室","餐区","猫砂区"];
+    const room = rooms[seed % rooms.length];
+    const anchor = roomAnchors[room];
+    // add small jitter
+    const jitter = (n)=> n + (seed%5 - 2)*2;
+    movePetDot(jitter(anchor[0]), jitter(anchor[1]));
+    $("#locPetName").textContent = pets.find(p=>p.id===activePet).name + " · " + room;
+  };
+}
+
+/* -----------------------------
+   Feed rendering + filters
+----------------------------- */
+let activeFilter = "all";
+
+function renderFeed(){
+  const list = $("#feedList");
+  const shown = feedItems.filter(it=>{
+    if(activeFilter==="all") return it.pet===activePet;
+    return it.pet===activePet && it.type===activeFilter;
+  });
+
+  list.innerHTML = shown.map(it=>`
+    <div class="feed-item">
+      <div class="feed-ic">${it.icon}</div>
+      <div class="feed-body">
+        <div class="feed-title">${it.t} · ${it.title}</div>
+        <div class="feed-meta">${it.desc}</div>
+        ${it.level?`<div class="feed-meta" style="color:${it.level==="danger"?"var(--danger)":"var(--warn)"};font-weight:900;">${it.level==="danger"?"高风险":"需关注"}</div>`:""}
+        <div class="feed-actions">
+          ${it.clip?`<div class="feed-btn" data-clip="${it.t}">查看片段</div>`:""}
+          <div class="feed-btn ghost" data-jump="${it.t}">定位联动</div>
+        </div>
+      </div>
+    </div>
+  `).join("");
+
+  // actions
+  $$("[data-clip]").forEach(b=>{
+    b.onclick=()=>toast("打开 "+b.dataset.clip+" 证据回放（demo）");
+  });
+  $$("[data-jump]").forEach(b=>{
+    b.onclick=()=>{
+      activeTab="location";
+      $$(".tab-btn").forEach(x=>x.classList.toggle("active", x.dataset.tab===activeTab));
+      showTab("location");
+      $("#timeSlider").value = Number(b.dataset.jump.split(":")[0]);
+      $("#timeSlider").dispatchEvent(new Event("input"));
+      toast("已联动到位置页 "+b.dataset.jump);
+    }
+  });
+}
+
+function initFeedFilters(){
+  $$("[data-filter]").forEach(p=>{
+    p.onclick=()=>{
+      activeFilter = p.dataset.filter;
+      $$("[data-filter]").forEach(x=>{
+        x.style.background="#fff"; x.style.border="1px solid var(--line)"; x.style.color="#111";
+      });
+      p.style.background="#FFF4F0"; p.style.border="1px solid #FFD7C8";
+      renderFeed();
+    };
+  });
+}
+
+/* -----------------------------
+   Alerts rendering + modal
+----------------------------- */
+function renderAlerts(){
+  const preview = $("#alertPreview");
+  const list = $("#alertsList");
+  const count = alerts.filter(a=>a.pet===activePet).length;
+  $("#alertCount").textContent = count + " 条新告警";
+
+  const top2 = alerts.filter(a=>a.pet===activePet).slice(0,2);
+  preview.innerHTML = top2.map(a=>alertCardHTML(a,true)).join("");
+
+  list.innerHTML = alerts.filter(a=>a.pet===activePet).map(a=>alertCardHTML(a,false)).join("");
+
+  // bind actions
+  $$("[data-alert-clip]").forEach(b=>{
+    b.onclick=()=>toast("播放 "+b.dataset.alertClip+" 告警片段（demo）");
+  });
+  $$("[data-alert-false]").forEach(b=>{
+    b.onclick=()=>{
+      const id=b.dataset.alertFalse;
+      alerts = alerts.filter(x=>x.id!==id);
+      renderAlerts();
+      toast("已标记误报");
+    }
+  });
+  $$("[data-alert-note]").forEach(b=>{
+    b.onclick=()=>toast("已添加备注（demo）");
+  });
+}
+
+function alertCardHTML(a,compact){
+  const petName = pets.find(p=>p.id===a.pet)?.name || "";
+  const lvlClass = a.level==="danger"?"lvl-danger":(a.level==="warn"?"lvl-warn":"lvl-info");
+  return `
+    <div class="alert-card${compact?"":" shadowless"}">
+      <div class="alert-level ${lvlClass}">${a.level==="danger"?"高风险":"需关注"}</div>
+      <div style="flex:1;">
+        <div class="alert-title">${a.time} · ${petName} · ${a.title}</div>
+        <div class="alert-desc">${a.desc}</div>
+        <div class="alert-actions">
+          <div class="small-btn" data-alert-clip="${a.time}">查看片段</div>
+          ${compact?``:`
+            <div class="small-btn ghost" data-alert-false="${a.id}">误报</div>
+            <div class="small-btn ghost" data-alert-note="${a.id}">备注</div>
+          `}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function initAlertsModal(){
+  $("#openAlerts").onclick=()=>$("#alertsModal").classList.add("show");
+  $("#closeAlerts").onclick=()=>$("#alertsModal").classList.remove("show");
+  $("#alertsModal").onclick=(e)=>{
+    if(e.target.id==="alertsModal") $("#alertsModal").classList.remove("show");
+  };
+}
+
+/* -----------------------------
+   Misc UI
+----------------------------- */
+function initCameraButtons(){
+  $$(".cam-btn").forEach(b=>b.onclick=()=>setActiveCam(b.dataset.cam));
+  $$(".camPick").forEach(b=>b.onclick=()=>setActiveCam(b.dataset.cam));
+}
+
+function initSwitches(){
+  $$(".switch").forEach(sw=>{
+    sw.onclick=()=>sw.classList.toggle("on");
+  });
+}
+
+function updateClock(){
+  const now = new Date();
+  const hh = String(now.getHours()).padStart(2,"0");
+  const mm = String(now.getMinutes()).padStart(2,"0");
+  $("#liveTime").textContent = `今天 ${hh}:${mm}`;
+}
+setInterval(updateClock, 60000);
+
+function toast(text){
+  const t = document.createElement("div");
+  t.textContent = text;
+  t.style.position="fixed"; t.style.left="50%"; t.style.bottom="110px";
+  t.style.transform="translateX(-50%)"; t.style.background="#111"; t.style.color="#fff";
+  t.style.padding="10px 12px"; t.style.borderRadius="12px"; t.style.fontWeight="800";
+  t.style.fontSize="13px"; t.style.zIndex=9999; t.style.boxShadow="var(--shadow)";
+  document.body.appendChild(t);
+  setTimeout(()=>{t.style.opacity="0"; t.style.transition="opacity .25s";}, 1200);
+  setTimeout(()=>t.remove(), 1500);
+}
+
+/* -----------------------------
+   App start
+----------------------------- */
+initPets();
+initTabs();
+initCameraButtons();
+initTimeSlider();
+initFeedFilters();
+initAlertsModal();
+initSwitches();
+renderFeed();
+renderAlerts();
+updateClock();
+setActiveCam(activeCam);
+
+// buttons
+$("#btnReplay").onclick=()=>toast("回放最近 10 秒（demo）");
+$("#btnCall").onclick=()=>toast("已发出呼叫：'咪咪过来～'（demo）");
+$("#btnSnap").onclick=()=>toast("截图已保存到相册（demo）");
+
+// run loop
+tickBehaviors();
+</script>
+</body>
+</html>
