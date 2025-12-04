@@ -61,33 +61,33 @@
         // 🐱 猫咪档案与日报数据
         const PET_DATA = {
             '栗子': { 
-                type: '狸花猫', weight: '4.2kg',
+                type: '狸花猫', weight: '5.2kg',
                 activeLevel: 92, eatCount: 2, drinkCount: 2, 
                 avatarColor: 'bg-gray-200 text-gray-700',
                 // 这里修改栗子的日报文案
                 report: `**【栗子日报】**\n今日标签：**精力过剩**。\n6点半就开始**跑酷**，10点又玩了猫薄荷球。08:15 吃了早餐。截止目前活跃度全家第一。注意：23:09 检测到**夜间跑酷**。`
             },
             '奶油': { 
-                type: '金渐层长毛', weight: '5.5kg',
+                type: '白色田园猫', weight: '4.5kg',
                 activeLevel: 28, eatCount: 1, drinkCount: 1, 
                 avatarColor: 'bg-yellow-100 text-yellow-700',
                 // 这里修改奶油的日报文案
-                report: `**【奶油日报】**\n今日标签：**岁月静好**。\n除了早上吃饭和 **09:40 喝水**，几乎都在睡觉或暗中观察。10:45 被栗子带着跑了两步，总体非常让人省心。`
+                report: `**【奶油日报】**\n今日标签：**岁月静好**。\n除了早上吃饭和 **09:40 喝水**，几乎都在睡觉或暗中观察。23:09 被栗子带着跑了两步，总体非常让人省心。`
             }
         };
 
         // 📅 今日日志列表 (显示在日报页和 AI 逻辑中)
         const LOGS_DATA = [
-            { id: 10, time: '10:45', cat: '双猫', type: 'normal', action: '追逐打闹', detail: '客厅发生短时追逐，活跃度上升，未检测到攻击行为', videoTime: null, thumbColor: 'bg-indigo-100' },
-            { id: 9, time: '10:20', cat: '栗子', type: 'normal', action: '玩耍', detail: '独自玩猫薄荷球，持续 5 分钟', videoTime: null, thumbColor: 'bg-orange-100' },
-            { id: 8, time: '09:40', cat: '奶油', type: 'normal', action: '饮水', detail: '饮水量约 45ml，饮水机工作正常', videoTime: null, thumbColor: 'bg-blue-50' },
-            { id: 7, time: '08:15', cat: '双猫', type: 'normal', action: '进食', detail: '自动喂食器出粮，双猫同时进食早餐', videoTime: null, thumbColor: 'bg-green-100' }, 
-            { id: 6, time: '06:30', cat: '栗子', type: 'normal', action: '跑酷', detail: '检测到高频移动，疑似早间唤醒服务', videoTime: null, thumbColor: 'bg-red-50' },
+            { id: 10, time: '10:45', cat: '双猫', type: 'normal', action: '多猫互动', detail: '客厅发生短时追逐，活跃度上升，未检测到攻击行为', videoTime: null, thumbColor: 'bg-indigo-100' },
+            { id: 9, time: '10:20', cat: '栗子', type: 'normal', action: '活动', detail: '独自玩猫玩具，持续 5 分钟', videoTime: null, thumbColor: 'bg-orange-100' },
+            { id: 8, time: '09:40', cat: '奶油', type: 'normal', action: '饮水/进食', detail: '似乎正在饮水，持续饮水30s，爱喝水的好宝宝', videoTime: null, thumbColor: 'bg-blue-50' },
+            { id: 7, time: '08:15', cat: '双猫', type: 'normal', action: '饮水/进食', detail: '双猫和谐进食早餐', videoTime: null, thumbColor: 'bg-green-100' }, 
+            { id: 6, time: '06:30', cat: '栗子', type: 'normal', action: '活动', detail: '检测到高频移动，疑似早间唤醒服务', videoTime: null, thumbColor: 'bg-red-50' },
         ];
 
         // 💬 AI 助手初始对话
         const INITIAL_CHAT = [
-            { id: 1, type: 'bot', text: '你好！我是 PetGuard 智能助手。今日监控已连接。数据分析显示：栗子今天活力满满，奶油则比较安静。', time: '11:00' },
+            { id: 1, type: 'bot', text: '你好！我是 PetGuard 宠物看护。今天也在帮你看护毛孩子们哦！栗子今天活力满满，奶油则比较安静。想了解它们今天做了什么吗？', time: '11:00' },
         ];
 
         // 📊 历史图表数据 (最近7天)
@@ -116,9 +116,9 @@
               timeTrigger: CONFIG.alertTriggerTime, // 14s
               cat: '双猫', 
               type: 'warning', 
-              action: '深夜跑酷', 
+              action: '多猫互动', 
               title: '检测到深夜跑酷行为', 
-              detail: '【夜视行为分析】监测到客厅发生激烈的追逐游戏。栗子率先发起冲刺，奶油紧随其后。AI 判定为高能玩耍状态。', 
+              detail: '【行为分析】监测到客厅发生激烈的追逐游戏。栗子率先发起冲刺，奶油紧随其后。AI 判定为高能玩耍状态，快来看看吧。', 
               videoTime: CONFIG.alertTriggerTime 
             }
           },
@@ -145,7 +145,7 @@
           // 如果是 23 号，强制返回包含呕吐视频的日志
           if (date.includes('23')) {
             return [
-                { id: '23-1', time: '23:15', cat: '奶油', type: 'danger', action: '呕吐', detail: '检测到腹部抽搐，吐出毛球，请关注健康状况。', videoTime: 0, thumbColor: 'bg-red-100', videoSrc: CONFIG.secondaryVideo },
+                { id: '23-1', time: '23:15', cat: '栗子', type: 'danger', action: '呕吐', detail: '检测到腹部抽搐，吐出毛球，请关注健康状况。', videoTime: 0, thumbColor: 'bg-red-100', videoSrc: CONFIG.secondaryVideo },
                 { id: '23-2', time: '14:20', cat: '双猫', type: 'normal', action: '睡觉', detail: '午后小憩，环境安静。', videoTime: null, thumbColor: 'bg-blue-50' },
                 { id: '23-3', time: '08:00', cat: '栗子', type: 'normal', action: '进食', detail: '正常早餐时间。', videoTime: null, thumbColor: 'bg-green-50' }
             ];
@@ -344,7 +344,7 @@
             // 本地兜底回复逻辑 (当没有 Key 时使用)
             const getFallbackResponse = () => {
                const q = userQuery.toLowerCase();
-               if (q.includes("表现") || q.includes("总结")) return `今日总结：\n1. **栗子**：精力旺盛，有一次跳桌子违规。\n2. **奶油**：岁月静好，大部分时间在休息。`;
+               if (q.includes("表现") || q.includes("总结")) return `今日总结：\n1. **栗子**：精力旺盛，有一次跳桌子嗅闻零食，注意咯。\n2. **奶油**：岁月静好，大部分时间在休息。`;
                if (q.includes("栗子")) return `**栗子**今天非常活跃，早上跑酷，晚上还跳了一次桌子。`;
                if (q.includes("奶油")) return `**奶油**今天很让人省心，活跃度不高，一直在暗中观察。`;
                if (q.includes("异常") || q.includes("违规") || q.includes("跑酷")) return `检测到高能时刻：**23:09** 栗子和奶油在客厅进行了激烈的**深夜跑酷**（已为您生成智能卡片）。`;
@@ -606,3 +606,4 @@
     </script>
 </body>
 </html>
+
