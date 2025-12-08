@@ -43,7 +43,7 @@
             Sparkles, Utensils, Moon, Footprints, Upload, Volume2, VolumeX, Eye, 
             Radio, MessageCircle, Send, User, Bot, Filter, ZoomIn, PlayCircle, Film, 
             Loader2, Wifi, Battery, ChevronRight, Edit2, Shield, Droplets, Calendar, 
-            BarChart2, ChevronLeft, Minimize2
+            BarChart2, ChevronLeft, Minimize2, ShoppingBag, HeartPulse, Lightbulb
         } from 'lucide-react';
 
         // ==========================================
@@ -58,39 +58,51 @@
             alertTriggerTime: 14, // 视频播放到第几秒触发报警
         };
 
-        // 🐱 猫咪档案与日报数据
+        // 🐱 猫咪档案与日报数据 (新增：健康洞察与建议)
         const PET_DATA = {
             '栗子': { 
-                type: '狸花猫', weight: '5.2kg',
+                type: '狸花猫', weight: '4.2kg',
                 activeLevel: 92, eatCount: 2, drinkCount: 2, 
                 avatarColor: 'bg-gray-200 text-gray-700',
-                // 这里修改栗子的日报文案
-                report: `**【栗子日报】**\n今日标签：**精力过剩**。\n6点半就开始**跑酷**，10点又玩了猫薄荷球。08:15 吃了早餐。截止目前活跃度全家第一。注意：23:09 检测到**夜间跑酷**。`
+                preferences: ['猫薄荷球', '激光笔'],
+                recentStatus: '精力过剩',
+                report: `**【栗子日报】**\n今日标签：**精力过剩**。\n6点半就开始**跑酷**，10点又玩了猫薄荷球。08:15 吃了早餐。截止目前活跃度全家第一。注意：23:09 检测到**夜间跑酷**。`,
+                insight: `建议睡前增加 15 分钟逗猫棒互动，消耗其多余精力，减少夜间跑酷频率。`
             },
             '奶油': { 
-                type: '白色田园猫', weight: '4.5kg',
+                type: '金渐层长毛', weight: '5.5kg',
                 activeLevel: 28, eatCount: 1, drinkCount: 1, 
                 avatarColor: 'bg-yellow-100 text-yellow-700',
-                // 这里修改奶油的日报文案
-                report: `**【奶油日报】**\n今日标签：**岁月静好**。\n除了早上吃饭和 **09:40 喝水**，几乎都在睡觉或暗中观察。23:09 被栗子带着跑了两步，总体非常让人省心。`
+                preferences: ['弹簧玩具', '纸箱'],
+                recentStatus: '运动不足',
+                report: `**【奶油日报】**\n今日标签：**岁月静好**。\n除了早上吃饭和 **09:40 喝水**，几乎都在睡觉或暗中观察。10:45 被栗子带着跑了两步，总体非常让人省心。`,
+                insight: `奶油本周平均活跃度仅 30%，且画面中未检测到它最爱的**弹簧玩具**。可能旧玩具已丢失。建议补充新玩具以激发运动兴趣，预防肥胖。`
             }
         };
 
-        // 📅 今日日志列表 (显示在日报页和 AI 逻辑中)
+        // 📅 今日日志列表
         const LOGS_DATA = [
-            { id: 10, time: '10:45', cat: '双猫', type: 'normal', action: '多猫互动', detail: '客厅发生短时追逐，活跃度上升，未检测到攻击行为', videoTime: null, thumbColor: 'bg-indigo-100' },
-            { id: 9, time: '10:20', cat: '栗子', type: 'normal', action: '活动', detail: '独自玩猫玩具，持续 5 分钟', videoTime: null, thumbColor: 'bg-orange-100' },
-            { id: 8, time: '09:40', cat: '奶油', type: 'normal', action: '饮水/进食', detail: '似乎正在饮水，持续饮水30s，爱喝水的好宝宝', videoTime: null, thumbColor: 'bg-blue-50' },
-            { id: 7, time: '08:15', cat: '双猫', type: 'normal', action: '饮水/进食', detail: '双猫和谐进食早餐', videoTime: null, thumbColor: 'bg-green-100' }, 
-            { id: 6, time: '06:30', cat: '栗子', type: 'normal', action: '活动', detail: '检测到高频移动，疑似早间唤醒服务', videoTime: null, thumbColor: 'bg-red-50' },
+            { id: 10, time: '10:45', cat: '双猫', type: 'normal', action: '追逐打闹', detail: '客厅发生短时追逐，活跃度上升，未检测到攻击行为', videoTime: null, thumbColor: 'bg-indigo-100' },
+            { id: 9, time: '10:20', cat: '栗子', type: 'normal', action: '玩耍', detail: '独自玩猫薄荷球，持续 5 分钟', videoTime: null, thumbColor: 'bg-orange-100' },
+            { id: 8, time: '09:40', cat: '奶油', type: 'normal', action: '饮水', detail: '饮水量约 45ml，饮水机工作正常', videoTime: null, thumbColor: 'bg-blue-50' },
+            { id: 7, time: '08:15', cat: '双猫', type: 'normal', action: '进食', detail: '自动喂食器出粮，双猫同时进食早餐', videoTime: null, thumbColor: 'bg-green-100' }, 
+            { id: 6, time: '06:30', cat: '栗子', type: 'normal', action: '跑酷', detail: '检测到高频移动，疑似早间唤醒服务', videoTime: null, thumbColor: 'bg-red-50' },
         ];
 
-        // 💬 AI 助手初始对话
+        // 💬 AI 助手初始对话 (新增：主动健康建议卡片)
         const INITIAL_CHAT = [
-            { id: 1, type: 'bot', text: '你好！我是 PetGuard 宠物看护。今天也在帮你看护毛孩子们哦！栗子今天活力满满，奶油则比较安静。想了解它们今天做了什么吗？', time: '11:00' },
+            { id: 1, type: 'bot', text: '你好！我是 PetGuard 智能助手。今日监控已连接。数据分析显示：栗子今天活力满满，奶油则比较安静。', time: '11:00' },
+            { 
+                id: 'insight-1', 
+                type: 'insight', 
+                title: '每周健康洞察 🩺',
+                text: '检测到 **奶油** 本周活跃度持续走低 (↓15%)。系统回顾发现它最爱的 **弹簧玩具** 已经 3 天未出现在画面中，可能是丢失了。建议补充新玩具以增加运动量。',
+                actionLink: '去补货',
+                time: '11:02'
+            }
         ];
 
-        // 📊 历史图表数据 (最近7天)
+        // 📊 历史图表数据
         const WEEKLY_STATS = [
             { date: '11/18', day: '一', liziActive: 60, liziEat: 4, creamActive: 20, creamEat: 3 },
             { date: '11/19', day: '二', liziActive: 75, liziEat: 5, creamActive: 25, creamEat: 3 },
@@ -102,35 +114,29 @@
         ];
 
         // 🎥 视频触发剧本
-        // 这里定义在视频播放到特定时间点时发生的事情
         const VIDEO_SCRIPT = [
-          // 前奏
-          { startTime: 0, endTime: 8, hasMotion: false, cameraStatus: { text: '监控中', color: 'bg-green-500' } },
-          // 动作开始
-          { startTime: 8, endTime: 12, hasMotion: true, cameraStatus: { text: '识别中', color: 'bg-blue-500' } },
-          // 高潮与报警
+          { startTime: 0, endTime: 8, hasMotion: false, cameraStatus: { text: '监控中', color: 'bg-green-500' }, boxes: [] },
+          { startTime: 8, endTime: 12, hasMotion: true, cameraStatus: { text: '识别中', color: 'bg-blue-500' }, boxes: [] },
           { 
             startTime: 12, endTime: 16, hasMotion: true, cameraStatus: { text: '⚠️ 异常', color: 'bg-orange-500' }, 
-            // 在这里配置触发的警报内容
             triggerAlert: { 
               timeTrigger: CONFIG.alertTriggerTime, // 14s
               cat: '双猫', 
               type: 'warning', 
-              action: '多猫互动', 
+              action: '深夜跑酷', 
               title: '检测到深夜跑酷行为', 
-              detail: '【行为分析】监测到客厅发生激烈的追逐游戏。栗子率先发起冲刺，奶油紧随其后。AI 判定为高能玩耍状态，快来看看吧。', 
+              detail: '【夜视行为分析】监测到客厅发生激烈的追逐游戏。栗子率先发起冲刺，奶油紧随其后。AI 判定为高能玩耍状态。', 
               videoTime: CONFIG.alertTriggerTime 
-            }
+            },
+            boxes: []
           },
-          // 结束
-          { startTime: 16, endTime: 100, hasMotion: false, cameraStatus: { text: '监控中', color: 'bg-green-500' } }
+          { startTime: 16, endTime: 100, hasMotion: false, cameraStatus: { text: '监控中', color: 'bg-green-500' }, boxes: [] }
         ];
 
         // ==========================================
-        // ⚙️ 逻辑代码区域 (通常无需修改)
+        // ⚙️ 逻辑代码区域
         // ==========================================
 
-        // 辅助函数：生成历史日历
         const generateCalendarDays = () => {
           const days = [];
           for (let i = 0; i < 6; i++) days.push(null);
@@ -138,20 +144,17 @@
           return days;
         };
 
-        // 辅助函数：生成历史假日志
         const getHistoryLogs = (date) => {
           if (date.includes('24')) return LOGS_DATA; 
           
-          // 如果是 23 号，强制返回包含呕吐视频的日志
           if (date.includes('23')) {
             return [
-                { id: '23-1', time: '23:15', cat: '栗子', type: 'danger', action: '呕吐', detail: '检测到腹部抽搐，吐出毛球，请关注健康状况。', videoTime: 0, thumbColor: 'bg-red-100', videoSrc: CONFIG.secondaryVideo },
+                { id: '23-1', time: '23:15', cat: '奶油', type: 'danger', action: '呕吐', detail: '检测到腹部抽搐，吐出毛球，请关注健康状况。', videoTime: 0, thumbColor: 'bg-red-100', videoSrc: CONFIG.secondaryVideo },
                 { id: '23-2', time: '14:20', cat: '双猫', type: 'normal', action: '睡觉', detail: '午后小憩，环境安静。', videoTime: null, thumbColor: 'bg-blue-50' },
                 { id: '23-3', time: '08:00', cat: '栗子', type: 'normal', action: '进食', detail: '正常早餐时间。', videoTime: null, thumbColor: 'bg-green-50' }
             ];
           }
 
-          // 其他日期随机生成
           const events = [
             { cat: '栗子', action: '活动', detail: '凌晨三点的高速运动', thumbColor: 'bg-orange-100' },
             { cat: '奶油', action: '休息', detail: '在沙发上睡了整整一下午', thumbColor: 'bg-yellow-50' },
@@ -168,7 +171,6 @@
           });
         };
 
-        // 辅助函数：格式化 Markdown 加粗
         const formatText = (text) => {
             if (!text) return null;
             const parts = text.split(/(\*\*.*?\*\*)/g);
@@ -188,7 +190,6 @@
           const [viewMode, setViewMode] = useState('live');
           const [selectedCatFilter, setSelectedCatFilter] = useState('all'); 
           const [recordCatFilter, setRecordCatFilter] = useState('all');
-          // playModal 增加 src 字段，支持不同视频源
           const [playModal, setPlayModal] = useState({ show: false, startTime: 0, src: null }); 
           const [isAiThinking, setIsAiThinking] = useState(false);
           const [selectedDate, setSelectedDate] = useState(CONFIG.currentDate); 
@@ -259,7 +260,6 @@
                    if (!triggeredAlerts.has(alertId)) {
                        setTriggeredAlerts(prev => new Set(prev).add(alertId));
                        
-                       // 1. 显示顶部 Push
                        setPushNotification({
                          title: activeScript.triggerAlert.title,
                          text: activeScript.triggerAlert.detail,
@@ -267,7 +267,6 @@
                        });
                        setTimeout(() => setPushNotification(null), 6000); 
                        
-                       // 2. 写入日志
                        const newLog = {
                          id: Date.now(), time: '23:09', cat: activeScript.triggerAlert.cat, type: 'warning',
                          action: activeScript.triggerAlert.action, detail: activeScript.triggerAlert.detail,
@@ -275,7 +274,6 @@
                        };
                        setLogs(oldLogs => [newLog, ...oldLogs]); 
 
-                       // 3. 发送 AI 智能卡片
                        setChatMessages(prev => [...prev, {
                          id: Date.now(), type: 'push', time: '23:09', alertId: alertId,
                          title: activeScript.triggerAlert.title, text: activeScript.triggerAlert.detail,
@@ -291,7 +289,6 @@
             return () => videoElement.removeEventListener('timeupdate', handleTimeUpdate);
           }, [videoUrl, playModal.show, triggeredAlerts]); 
 
-          // --- 弹窗播放同步 ---
           useEffect(() => {
             if (playModal.show && modalVideoRef.current) {
               modalVideoRef.current.currentTime = playModal.startTime;
@@ -299,7 +296,6 @@
             }
           }, [playModal.show]);
 
-          // --- 事件处理函数 ---
           const handleFileUpload = (event) => {
             const file = event.target.files[0];
             if (file) {
@@ -324,12 +320,10 @@
             }
           };
 
-          // 支持传入特定视频源
           const handleJumpToVideo = (time, src = null) => {
             const targetSrc = src || videoUrl;
             if (time === null || time === undefined) return;
             if (!targetSrc) return alert("请先在监控页上传视频！");
-            // 弹窗时使用指定的 src
             setPlayModal({ show: true, startTime: time, src: targetSrc });
             setPushNotification(null);
           };
@@ -341,14 +335,14 @@
             【今日日志】${currentLogs.map(l => `${l.time} ${l.action}`).join(', ')}
             请简练回答，语气亲切。`;
 
-            // 本地兜底回复逻辑 (当没有 Key 时使用)
             const getFallbackResponse = () => {
                const q = userQuery.toLowerCase();
-               if (q.includes("表现") || q.includes("总结")) return `今日总结：\n1. **栗子**：精力旺盛，有一次跳桌子嗅闻零食，注意咯。\n2. **奶油**：岁月静好，大部分时间在休息。`;
+               if (q.includes("表现") || q.includes("总结")) return `今日总结：\n1. **栗子**：精力旺盛，有一次跳桌子违规。\n2. **奶油**：岁月静好，大部分时间在休息。`;
                if (q.includes("栗子")) return `**栗子**今天非常活跃，早上跑酷，晚上还跳了一次桌子。`;
-               if (q.includes("奶油")) return `**奶油**今天很让人省心，活跃度不高，一直在暗中观察。`;
+               if (q.includes("奶油")) return `**奶油**今天很让人省心，但活跃度偏低。另外，我注意到它最近没玩**弹簧玩具**，建议您检查一下是不是丢了。`;
+               if (q.includes("建议") || q.includes("买") || q.includes("推荐")) return `根据**奶油**最近的活跃度数据（低至28%）和偏好分析，强烈建议给它补充一些**弹簧玩具**来激发兴趣。栗子的话，现在的猫薄荷球它玩得很开心。`;
                if (q.includes("异常") || q.includes("违规") || q.includes("跑酷")) return `检测到高能时刻：**23:09** 栗子和奶油在客厅进行了激烈的**深夜跑酷**（已为您生成智能卡片）。`;
-               return "我是 PetGuard 智能助手。您可以问我“栗子今天干了什么？”或者“谁在跑酷？”";
+               return "我是 PetGuard 智能助手。您可以问我“奶油需要买新玩具吗？”或者“栗子今天干了什么？”";
             };
 
             if (!CONFIG.apiKey) { await new Promise(r => setTimeout(r, 800)); return getFallbackResponse(); }
@@ -475,8 +469,14 @@
                         {chatMessages.map(msg => (
                           <div key={msg.id} className={`flex flex-col animate-in slide-in-from-bottom-2 fade-in duration-300 ${msg.type === 'user' ? 'items-end' : 'items-start'}`}>
                              <div className={`flex max-w-[90%] ${msg.type === 'user' ? 'flex-row-reverse' : 'flex-row'} items-end gap-2`}>
-                                {msg.type !== 'user' && <div className={`w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center shadow-sm ${msg.type === 'push' ? 'bg-orange-100 text-orange-600' : 'bg-white text-indigo-600 border border-gray-100'}`}>{msg.type === 'push' ? <AlertTriangle size={16}/> : <Bot size={18}/>}</div>}
-                                <div className={`relative px-4 py-3 text-sm shadow-sm ${msg.type === 'user' ? 'bg-indigo-600 text-white rounded-2xl rounded-br-sm' : msg.isHighlightCard ? 'w-full p-0 bg-transparent shadow-none' : msg.type === 'push' ? 'bg-white border-l-4 border-orange-500 rounded-r-2xl rounded-bl-2xl' : 'bg-white text-gray-800 rounded-2xl rounded-bl-sm border border-gray-100'}`}>
+                                {msg.type !== 'user' && <div className={`w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center shadow-sm ${msg.type === 'push' ? 'bg-orange-100 text-orange-600' : msg.type === 'insight' ? 'bg-blue-100 text-blue-600' : 'bg-white text-indigo-600 border border-gray-100'}`}>{msg.type === 'push' ? <AlertTriangle size={16}/> : msg.type === 'insight' ? <Lightbulb size={16}/> : <Bot size={18}/>}</div>}
+                                <div className={`relative px-4 py-3 text-sm shadow-sm ${
+                                    msg.type === 'user' ? 'bg-indigo-600 text-white rounded-2xl rounded-br-sm' : 
+                                    msg.isHighlightCard ? 'w-full p-0 bg-transparent shadow-none' : 
+                                    msg.type === 'push' ? 'bg-white border-l-4 border-orange-500 rounded-r-2xl rounded-bl-2xl' : 
+                                    msg.type === 'insight' ? 'bg-blue-50 border-l-4 border-blue-500 text-gray-800 rounded-r-2xl rounded-bl-2xl' : 
+                                    'bg-white text-gray-800 rounded-2xl rounded-bl-sm border border-gray-100'
+                                }`}>
                                    {msg.isHighlightCard ? (
                                      <div className="bg-white rounded-xl overflow-hidden border border-orange-200 shadow-md w-64">
                                         <div className="h-32 bg-orange-100 relative group cursor-pointer" onClick={() => handleJumpToVideo(msg.videoTime)}>
@@ -486,7 +486,12 @@
                                         <div className="p-3"><h4 className="font-bold text-gray-800 text-sm mb-1">{msg.title}</h4><p className="text-xs text-gray-600 leading-relaxed">{msg.text}</p></div>
                                      </div>
                                    ) : (
-                                     <>{msg.title && <div className="font-bold mb-1">{msg.title}</div>}<div className="leading-relaxed whitespace-pre-wrap">{formatText(msg.text)}</div><div className={`text-[10px] mt-1 text-right ${msg.type === 'user' ? 'text-indigo-200' : 'text-gray-400'}`}>{msg.time}</div></>
+                                     <>
+                                        {msg.title && <div className="font-bold mb-1 flex items-center gap-1">{msg.title}</div>}
+                                        <div className="leading-relaxed whitespace-pre-wrap">{formatText(msg.text)}</div>
+                                        {msg.actionLink && <div className="mt-2 pt-2 border-t border-blue-100 flex justify-end"><button className="text-xs bg-blue-500 text-white px-3 py-1 rounded-full flex items-center gap-1 hover:bg-blue-600 transition-colors"><ShoppingBag size={12}/> {msg.actionLink}</button></div>}
+                                        <div className={`text-[10px] mt-1 text-right ${msg.type === 'user' ? 'text-indigo-200' : 'text-gray-400'}`}>{msg.time}</div>
+                                     </>
                                    )}
                                 </div>
                              </div>
@@ -497,7 +502,7 @@
                      
                      {/* 底部输入区 */}
                      <div className="p-3 bg-white border-t border-gray-100 shadow-lg z-30">
-                        <div className="flex gap-2 overflow-x-auto pb-3 mb-1 scrollbar-hide"><button onClick={() => handleSendMessage('总结一下栗子今天的表现')} className="flex-shrink-0 px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-full text-xs text-gray-600 hover:bg-orange-50 hover:text-orange-600 hover:border-orange-200 transition-all font-medium shadow-sm">🐱 总结栗子表现</button><button onClick={() => handleSendMessage('奶油今天运动量大吗？')} className="flex-shrink-0 px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-full text-xs text-gray-600 hover:bg-orange-50 hover:text-orange-600 hover:border-orange-200 transition-all font-medium shadow-sm">🦁 奶油运动量</button><button onClick={() => handleSendMessage('今天有没有异常情况？')} className="flex-shrink-0 px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-full text-xs text-gray-600 hover:bg-orange-50 hover:text-orange-600 hover:border-orange-200 transition-all font-medium shadow-sm">⚠️ 查异常</button></div>
+                        <div className="flex gap-2 overflow-x-auto pb-3 mb-1 scrollbar-hide"><button onClick={() => handleSendMessage('总结一下栗子今天的表现')} className="flex-shrink-0 px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-full text-xs text-gray-600 hover:bg-orange-50 hover:text-orange-600 hover:border-orange-200 transition-all font-medium shadow-sm">🐱 总结栗子表现</button><button onClick={() => handleSendMessage('奶油今天运动量大吗？')} className="flex-shrink-0 px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-full text-xs text-gray-600 hover:bg-orange-50 hover:text-orange-600 hover:border-orange-200 transition-all font-medium shadow-sm">🦁 奶油运动量</button><button onClick={() => handleSendMessage('奶油需要买新玩具吗？')} className="flex-shrink-0 px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-full text-xs text-gray-600 hover:bg-orange-50 hover:text-orange-600 hover:border-orange-200 transition-all font-medium shadow-sm">🎁 购物建议</button></div>
                         <div className="flex gap-2 items-center"><input type="text" value={inputMessage} onChange={(e) => setInputMessage(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()} placeholder="和爱宠管家聊聊吧..." className="flex-1 bg-gray-100 rounded-full px-5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:bg-white transition-all text-gray-700 placeholder-gray-400"/><button onClick={() => handleSendMessage()} className={`bg-orange-500 text-white p-2.5 rounded-full hover:bg-orange-600 transition-all shadow-md active:scale-95 ${isAiThinking ? 'opacity-50 cursor-not-allowed' : ''}`} disabled={isAiThinking}><Send size={18} /></button></div>
                      </div>
                   </div>
@@ -508,8 +513,8 @@
                 <div className="p-4 flex-1 overflow-y-auto bg-gray-50">
                   <div className="flex items-center justify-between mb-6 pt-2"><h2 className="text-xl font-bold text-gray-800">每日喵记</h2><div className="flex bg-white rounded-lg p-1 shadow-sm border border-gray-100">{['all', '栗子', '奶油'].map(filter => <button key={filter} onClick={() => setSelectedCatFilter(filter)} className={`px-3 py-1 text-xs rounded-md transition-all ${selectedCatFilter === filter ? 'bg-orange-100 text-orange-700 font-bold' : 'text-gray-500 hover:text-gray-700'}`}>{filter === 'all' ? '全部' : filter}</button>)}</div></div>
                   <div className="mb-8 space-y-4">
-                     {(selectedCatFilter === 'all' || selectedCatFilter === '栗子') && <div className="bg-white p-5 rounded-2xl border border-orange-100 shadow-sm relative overflow-hidden group hover:shadow-md transition-shadow"><div className="absolute top-0 right-0 p-3 opacity-10"><Sparkles className="text-orange-500" size={50}/></div><div className="flex items-center gap-2 mb-2"><div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-xs font-bold text-gray-600">栗</div><span className="font-bold text-gray-800">栗子</span></div><div className="text-sm text-gray-600 leading-relaxed whitespace-pre-line pl-1">{formatText(PET_DATA['栗子'].report)}</div></div>}
-                     {(selectedCatFilter === 'all' || selectedCatFilter === '奶油') && <div className="bg-white p-5 rounded-2xl border border-yellow-100 shadow-sm relative overflow-hidden group hover:shadow-md transition-shadow"><div className="absolute top-0 right-0 p-3 opacity-10"><Moon className="text-yellow-500" size={50}/></div><div className="flex items-center gap-2 mb-2"><div className="w-6 h-6 rounded-full bg-yellow-100 flex items-center justify-center text-xs font-bold text-yellow-700">奶</div><span className="font-bold text-gray-800">奶油</span></div><div className="text-sm text-gray-600 leading-relaxed whitespace-pre-line pl-1">{formatText(PET_DATA['奶油'].report)}</div></div>}
+                     {(selectedCatFilter === 'all' || selectedCatFilter === '栗子') && <div className="bg-white p-5 rounded-2xl border border-orange-100 shadow-sm relative overflow-hidden group hover:shadow-md transition-shadow"><div className="absolute top-0 right-0 p-3 opacity-10"><Sparkles className="text-orange-500" size={50}/></div><div className="flex items-center gap-2 mb-2"><div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-xs font-bold text-gray-600">栗</div><span className="font-bold text-gray-800">栗子</span></div><div className="text-sm text-gray-600 leading-relaxed whitespace-pre-line pl-1">{formatText(PET_DATA['栗子'].report)}</div>{/* 建议模块 */}<div className="mt-4 pt-3 border-t border-orange-50 flex items-start gap-2"><div className="bg-orange-100 p-1.5 rounded-full text-orange-600 mt-0.5"><Lightbulb size={14}/></div><p className="text-xs text-gray-500 leading-relaxed">{PET_DATA['栗子'].insight}</p></div></div>}
+                     {(selectedCatFilter === 'all' || selectedCatFilter === '奶油') && <div className="bg-white p-5 rounded-2xl border border-yellow-100 shadow-sm relative overflow-hidden group hover:shadow-md transition-shadow"><div className="absolute top-0 right-0 p-3 opacity-10"><Moon className="text-yellow-500" size={50}/></div><div className="flex items-center gap-2 mb-2"><div className="w-6 h-6 rounded-full bg-yellow-100 flex items-center justify-center text-xs font-bold text-yellow-700">奶</div><span className="font-bold text-gray-800">奶油</span></div><div className="text-sm text-gray-600 leading-relaxed whitespace-pre-line pl-1">{formatText(PET_DATA['奶油'].report)}</div>{/* 建议模块 */}<div className="mt-4 pt-3 border-t border-yellow-50 flex items-start gap-2"><div className="bg-yellow-100 p-1.5 rounded-full text-yellow-700 mt-0.5"><ShoppingBag size={14}/></div><p className="text-xs text-gray-500 leading-relaxed">{PET_DATA['奶油'].insight}</p></div></div>}
                   </div>
                   <h3 className="text-sm font-bold text-gray-400 mb-4 uppercase tracking-wider">今日时间轴</h3>
                   <div className="space-y-6 relative before:absolute before:left-[15px] before:top-2 before:bottom-0 before:w-0.5 before:bg-gray-200">
@@ -606,4 +611,3 @@
     </script>
 </body>
 </html>
-
