@@ -20,13 +20,33 @@
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
     <style>
+        /* 优化滚动条样式：细长且美观，方便鼠标操作 */
+        .custom-scrollbar::-webkit-scrollbar {
+            height: 4px;
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background-color: #e5e7eb;
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background-color: #d1d5db;
+        }
+        
         .scrollbar-hide::-webkit-scrollbar { display: none; }
         .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+        
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         .animate-fade-in { animation: fadeIn 0.3s ease-out; }
         @keyframes slideDown { from { transform: translateY(-100%); } to { transform: translateY(0); } }
         .animate-slide-down { animation: slideDown 0.5s cubic-bezier(0.16, 1, 0.3, 1); }
+        /* 弹窗缩放动画 */
+        @keyframes zoomIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+        .animate-zoom-in { animation: zoomIn 0.2s ease-out; }
     </style>
 </head>
 <body class="bg-gray-50">
@@ -39,7 +59,7 @@
             Activity, Bell, Settings, AlertTriangle, Clock, X, 
             Sparkles, Utensils, Moon, Footprints, 
             Wifi, Battery, ChevronRight, Edit2, Shield, Droplets, Calendar, 
-            ChevronLeft, Play, PlayCircle, Video, Film, Coffee, Zap
+            ChevronLeft, Play, PlayCircle, Video, Film, Zap, Save
         } from 'lucide-react';
 
         // ==========================================
@@ -48,11 +68,11 @@
 
         const CONFIG = {
             currentDate: "11/24", 
-            alertTriggerTime: 14000, // 14秒 (毫秒)
+            alertTriggerTime: 14000, 
         };
 
-        // 🐱 猫咪档案
-        const PET_DATA = {
+        // 🐱 猫咪档案 (初始数据)
+        const INITIAL_PET_DATA = {
             '栗子': { 
                 type: '狸花猫', weight: '4.2kg',
                 avatarColor: 'bg-gray-200 text-gray-700',
@@ -65,7 +85,7 @@
             }
         };
 
-        // 🎨 事件样式定义 (用于时间轴节点)
+        // 🎨 事件样式定义
         const getEventStyle = (action) => {
             if (action === '多猫互动' || action === '呕吐') {
                 return {
@@ -80,17 +100,19 @@
                 iconBg: 'bg-blue-50', icon: <Clock size={14} className="text-blue-400"/>
             };
         };
-
-        // 🎨 封面图标定义 (用于视频缩略图占位)
+        
+        // 🎨 封面图标定义
         const getThumbIcon = (action) => {
-             if (action.includes('饮食')) return <Utensils size={24}/>;
+             if (!action) return <Film size={24}/>;
+             if (action.includes('饮食') || action.includes('饮水')) return <Utensils size={24}/>;
              if (action.includes('休息')) return <Moon size={24}/>;
              if (action.includes('活动') || action.includes('跑酷')) return <Zap size={24}/>;
-             if (action.includes('互动')) return <Activity size={24}/>;
+             if (action.includes('互动') || action.includes('多猫')) return <Activity size={24}/>;
+             if (action.includes('呕吐')) return <AlertTriangle size={24}/>;
              return <Film size={24}/>;
         }
 
-        // 📅 日历数据生成 (修改：生成过去30天)
+        // 📅 日历数据生成 (过去30天)
         const generateCalendarData = () => {
             const days = [];
             const today = new Date(2025, 10, 24); // 2025-11-24
@@ -111,76 +133,73 @@
 
         const CALENDAR_DAYS = generateCalendarData();
 
-        // 📝 日志生成器 (全量模拟视频样式，使用丰富文案)
+        // 📝 日志生成器
         const getHistoryLogs = (date) => {
-            
-            // 模拟不同日期数据差异
-            if (date === '11/24') {
+            if (date.includes('24')) { // 今天
                 return [
                     { 
-                        id: '1', 
+                        id: '24-1', 
                         time: '14:30', 
                         cat: '奶油', 
                         act: ["活动", "多猫互动"], 
                         desc: "奶油在客厅地面悠闲地巡视了一圈，随后轻快地跳上猫爬架，并抬头看向高处的同伴。", 
-                        stat: "状态非常活泼，探索欲满满，是个充满好奇心的小可爱。", 
-                        thumbColor: 'bg-yellow-50 text-yellow-500', 
-                        videoTime: 10 
+                        stat: "状态非常活泼，探索欲满满，是个充满好奇心的小可爱。",
+                        videoTime: 10, 
+                        thumbColor: 'bg-yellow-100 text-yellow-600'
                     },
                     { 
-                        id: '2', 
+                        id: '24-2', 
                         time: '14:28', 
                         cat: '栗子', 
                         act: ["休息", "多猫互动"], 
                         desc: "栗子一直稳稳地趴在猫爬架的高层窝里，俯瞰着下方活动的同伴，神情淡定自若。", 
-                        stat: "情绪稳定且放松，像是在享受它的午后静谧时光，状态很好。", 
-                        thumbColor: 'bg-gray-100 text-gray-500', 
-                        videoTime: 10 
+                        stat: "情绪稳定且放松，像是在享受它的午后静谧时光，状态很好。",
+                        videoTime: 10,
+                        thumbColor: 'bg-gray-200 text-gray-600'
                     },
                     { 
-                        id: '3', 
+                        id: '24-3', 
                         time: '09:40', 
                         cat: '奶油', 
                         act: ["饮食饮水"], 
-                        desc: "饮水机前停留，饮水量约 45ml，饮水频率正常。", 
-                        stat: "AI判定：正常补水", 
-                        thumbColor: 'bg-blue-50 text-blue-400', 
-                        videoTime: 10 
+                        desc: "奶油走到饮水机前，持续饮水约 45 秒。饮水量正常。", 
+                        stat: "水分补充充足，肾脏健康守护中。",
+                        videoTime: 10, 
+                        thumbColor: 'bg-blue-50 text-blue-500'
                     },
                     { 
-                        id: '4', 
+                        id: '24-4', 
                         time: '08:15', 
                         cat: '双猫', 
                         act: ["饮食饮水"], 
-                        desc: "自动喂食器出粮，双猫同时进食，未发生护食行为。", 
-                        stat: "AI判定：进食", 
-                        thumbColor: 'bg-green-100 text-green-500', 
-                        videoTime: 10 
+                        desc: "自动喂食器出粮，栗子和奶油同时听到声音跑来进食。", 
+                        stat: "食欲良好，进食积极。",
+                        videoTime: 10,
+                        thumbColor: 'bg-green-100 text-green-600'
                     }, 
                     { 
-                        id: '5', 
+                        id: '24-5', 
                         time: '06:30', 
                         cat: '栗子', 
                         act: ["活动"], 
                         desc: "检测到高频移动（跑酷），持续时间约 5 分钟。", 
                         stat: "AI判定：高能运动", 
-                        thumbColor: 'bg-red-50 text-red-400', 
-                        videoTime: 10 
+                        videoTime: 10, 
+                        thumbColor: 'bg-red-50 text-red-500'
                     }
                 ];
+            } 
+            if (date.includes('23')) { // 昨天
+                return [
+                    { id: '23-1', time: '23:15', cat: '奶油', act: ["呕吐"], desc: "检测到腹部抽搐，吐出毛球", stat: "⚠️ 异常检测", videoTime: 0, thumbColor: 'bg-red-100 text-red-600', videoSrc: CONFIG.secondaryVideo },
+                    { id: '23-2', time: '14:20', cat: '双猫', act: ["休息"], desc: "午后小憩，环境安静", stat: "状态：放松", videoTime: 10, thumbColor: 'bg-blue-50 text-blue-500' },
+                    { id: '23-3', time: '08:00', cat: '栗子', act: ["饮食饮水"], desc: "正常早餐", stat: "状态：正常", videoTime: 10, thumbColor: 'bg-green-50 text-green-600' }
+                ];
             }
-
-            if (date === '11/23') return [
-                { id: '23-1', time: '23:15', cat: '奶油', act: ["呕吐"], desc: "检测到腹部抽搐，吐出毛球。", stat: "⚠️ 异常检测：疑似呕吐", thumbColor: 'bg-red-100 text-red-500', videoTime: 10 },
-                { id: '23-2', time: '14:20', cat: '双猫', act: ["休息"], desc: "午后小憩，环境安静。", stat: "状态：放松", thumbColor: 'bg-blue-50 text-blue-400', videoTime: 10 },
-                { id: '23-3', time: '08:00', cat: '栗子', act: ["饮食饮水"], desc: "正常早餐。", stat: "状态：正常", thumbColor: 'bg-green-50 text-green-500', videoTime: 10 }
-            ];
-            
-            // 随机生成 (简单的洗牌模拟)
             return [
-                { id: `${date}-1`, time: '18:00', cat: '双猫', act: ["饮食饮水"], desc: "晚餐时间，双猫进食。", stat: "AI判定：进食", thumbColor: 'bg-green-50 text-green-500', videoTime: 10 },
-                { id: `${date}-2`, time: '14:00', cat: '奶油', act: ["休息"], desc: "在猫爬架睡觉。", stat: "AI判定：休息", thumbColor: 'bg-yellow-50 text-yellow-500', videoTime: 10 },
-                { id: `${date}-3`, time: '09:00', cat: '栗子', act: ["活动"], desc: "抓板磨爪。", stat: "AI判定：日常", thumbColor: 'bg-gray-50 text-gray-500', videoTime: 10 }
+                { id: 'x-1', time: '18:00', cat: '双猫', act: ["饮食饮水"], desc: "晚餐时间", stat: "AI判定：进食", videoTime: 10, thumbColor: 'bg-green-50 text-green-600' },
+                { id: 'x-2', time: '14:00', cat: '奶油', act: ["休息"], desc: "在猫爬架睡觉", stat: "AI判定：休息", videoTime: 10, thumbColor: 'bg-yellow-50 text-yellow-600' },
+                { id: 'x-3', time: '09:00', cat: '栗子', act: ["活动"], desc: "抓板磨爪", stat: "AI判定：活动", videoTime: 10, thumbColor: 'bg-gray-50 text-gray-500' }
             ];
         };
 
@@ -191,56 +210,160 @@
             );
         };
 
+        // 🎥 视频触发剧本
+        const VIDEO_SCRIPT = [
+          { startTime: 0, endTime: 12, hasMotion: false },
+          { 
+            startTime: 12, endTime: 16, hasMotion: true, 
+            triggerAlert: { 
+              timeTrigger: 14, cat: '双猫', 
+              act: ["多猫互动"], 
+              title: '检测到多猫互动', 
+              desc: '【实时】检测到深夜跑酷追逐，双方在客厅快速移动。', 
+              stat: 'AI 判定：高能玩耍',
+              videoTime: 14 
+            }
+          },
+          { startTime: 16, endTime: 100, hasMotion: false }
+        ];
+
         function App() {
           const [activeTab, setActiveTab] = useState('timeline');
-          const [selectedDate, setSelectedDate] = useState(CONFIG.currentDate);
+          const [videoUrl, setVideoUrl] = useState(CONFIG.defaultVideo);
+          const [playModal, setPlayModal] = useState({ show: false, startTime: 0, src: null }); 
+          const [selectedDate, setSelectedDate] = useState('24');
           const [currentLogs, setCurrentLogs] = useState([]);
           const [selectedCatFilter, setSelectedCatFilter] = useState('all'); 
           const [pushNotification, setPushNotification] = useState(null);
           const [hasTriggered, setHasTriggered] = useState(false);
-          const [playModal, setPlayModal] = useState(false); // 仅做UI展示用
-
+          const [triggeredAlerts, setTriggeredAlerts] = useState(new Set());
+          
+          // 宠物数据 State (用于编辑演示)
+          const [petData, setPetData] = useState(INITIAL_PET_DATA);
+          const [editModalOpen, setEditModalOpen] = useState(false);
+          const [editingPetKey, setEditingPetKey] = useState(null);
+          const [editForm, setEditForm] = useState({ name: '', type: '', weight: '' });
+          
+          const videoRef = useRef(null);
+          const modalVideoRef = useRef(null);
           const scrollContainerRef = useRef(null);
-
-          // 初始化加载数据
+          
           useEffect(() => {
               setCurrentLogs(getHistoryLogs(selectedDate));
           }, [selectedDate]);
 
-          // 自动滚动日历到今天
+          // 自动滚动日历
           useEffect(() => {
-            if (scrollContainerRef.current) {
-                scrollContainerRef.current.scrollLeft = scrollContainerRef.current.scrollWidth;
+            setTimeout(() => {
+                if (scrollContainerRef.current) {
+                    scrollContainerRef.current.scrollLeft = scrollContainerRef.current.scrollWidth;
+                }
+            }, 100);
+          }, []);
+
+          // 后台视频自动播放
+          useEffect(() => {
+            if (videoUrl === CONFIG.defaultVideo && videoRef.current) {
+               setTimeout(() => videoRef.current?.play().catch(e => console.log("Autoplay blocked")), 800);
             }
           }, []);
 
-          // ⏰ 核心逻辑：14秒定时模拟 Push (不依赖视频文件)
+          // 核心逻辑循环
           useEffect(() => {
-            const timer = setTimeout(() => {
-                if (!hasTriggered) {
-                    setHasTriggered(true);
-                    
-                    // 1. 弹出 Push
-                    setPushNotification({
-                        title: '检测到多猫互动',
-                        text: '刚刚：栗子和奶油在客厅发生追逐行为。'
-                    });
-                    setTimeout(() => setPushNotification(null), 6000);
+            if (!videoRef.current) return;
+            const videoElement = videoRef.current;
+            const handleTimeUpdate = () => {
+              const time = videoElement.currentTime;
+              const activeScript = VIDEO_SCRIPT.find(s => time >= s.startTime && time < s.endTime);
+              
+              if (activeScript?.triggerAlert && Math.floor(time) === activeScript.triggerAlert.timeTrigger) {
+                 const alertId = `alert-${Math.floor(time)}`;
+                 if (!triggeredAlerts.has(alertId)) {
+                     setTriggeredAlerts(prev => new Set(prev).add(alertId));
+                     
+                     // 1. 触发 Push
+                     setPushNotification({ 
+                         title: activeScript.triggerAlert.title, 
+                         text: activeScript.triggerAlert.desc, 
+                         videoTime: activeScript.triggerAlert.videoTime 
+                     });
+                     setTimeout(() => setPushNotification(null), 6000);
+                     
+                     // 2. 动态插入日志 (仅当选中的是今天时)
+                     if (selectedDate === '24') { 
+                         setCurrentLogs(prev => {
+                            if(prev.find(l => l.time === '23:09')) return prev;
+                            return [{
+                                id: 'alert-24', 
+                                time: '23:09', 
+                                cat: '双猫', 
+                                act: activeScript.triggerAlert.act, 
+                                desc: activeScript.triggerAlert.desc, 
+                                stat: activeScript.triggerAlert.stat,
+                                videoTime: activeScript.triggerAlert.videoTime, 
+                                thumbColor: 'bg-gray-800 text-white'
+                            }, ...prev];
+                         });
+                     }
+                 }
+              }
+            };
+            videoElement.addEventListener('timeupdate', handleTimeUpdate);
+            return () => videoElement.removeEventListener('timeupdate', handleTimeUpdate);
+          }, [videoUrl, triggeredAlerts, selectedDate]);
 
-                    // 2. 只有在看“今天”时，才插入新日志
-                    if (selectedDate === CONFIG.currentDate) {
-                        const newLog = { 
-                            id: 'realtime-alert', time: '23:09', cat: '双猫', 
-                            act: ["多猫互动"], desc: '【实时】检测到深夜跑酷追逐，双方在客厅快速移动。', stat: "AI判定：高能玩耍",
-                            thumbColor: 'bg-gray-800 text-white', videoTime: 10
-                        };
-                        setCurrentLogs(prev => [newLog, ...prev]);
-                    }
-                }
-            }, CONFIG.alertTriggerTime);
+          // 弹窗视频同步
+          useEffect(() => {
+            if (playModal.show && modalVideoRef.current) {
+              modalVideoRef.current.currentTime = playModal.startTime;
+              modalVideoRef.current.play().catch(e => {});
+            }
+          }, [playModal.show]);
 
-            return () => clearTimeout(timer);
-          }, [hasTriggered, selectedDate]);
+          const handleJumpToVideo = (time, src = null) => {
+              const targetSrc = src || videoUrl;
+              if (time === null || time === undefined) return;
+              if (!targetSrc) return alert("视频源未加载");
+              setPlayModal({ show: true, startTime: time, src: targetSrc });
+              setPushNotification(null);
+          };
+
+          // --- 编辑宠物相关函数 ---
+          const openEditModal = (catKey) => {
+              setEditingPetKey(catKey);
+              setEditForm({
+                  name: catKey, // 初始名字
+                  type: petData[catKey].type,
+                  weight: petData[catKey].weight
+              });
+              setEditModalOpen(true);
+          };
+
+          const savePetInfo = () => {
+              const newPetData = { ...petData };
+              const oldName = editingPetKey;
+              const newName = editForm.name;
+
+              // 如果改了名字，需要处理 Key 的变更
+              if (oldName !== newName) {
+                  newPetData[newName] = {
+                      ...newPetData[oldName],
+                      type: editForm.type,
+                      weight: editForm.weight
+                  };
+                  delete newPetData[oldName];
+              } else {
+                  // 没改名字，直接更新属性
+                  newPetData[oldName] = {
+                      ...newPetData[oldName],
+                      type: editForm.type,
+                      weight: editForm.weight
+                  };
+              }
+              
+              setPetData(newPetData);
+              setEditModalOpen(false);
+          };
 
           const TabButton = ({ id, icon: Icon, label }) => (
             <button onClick={() => setActiveTab(id)} className={`flex flex-col items-center justify-center w-full py-2 transition-colors ${activeTab === id ? 'text-orange-600' : 'text-gray-400'}`}>
@@ -248,13 +371,26 @@
               <span className="text-[10px] font-medium">{label}</span>
             </button>
           );
+          
+          const getTagStyle = (tag) => {
+              if (tag === '多猫互动' || tag === '呕吐' || tag.includes('异常')) {
+                  return 'bg-orange-100 text-orange-700 border-orange-200';
+              }
+              if (tag === '饮食饮水') return 'bg-blue-50 text-blue-600 border-blue-100';
+              if (tag === '休息') return 'bg-purple-50 text-purple-600 border-purple-100';
+              return 'bg-gray-100 text-gray-600 border-gray-200';
+          };
 
           return (
             <div className="bg-gray-50 min-h-screen font-sans text-gray-900 pb-20 relative max-w-md mx-auto shadow-2xl overflow-hidden border-x border-gray-200 flex flex-col">
               
+              <div className="hidden">
+                 <video ref={videoRef} src={videoUrl} loop muted playsInline />
+              </div>
+
               {/* Push Notification */}
               {pushNotification && (
-                <div onClick={() => setPlayModal(true)} className="fixed top-4 left-4 right-4 bg-white/95 backdrop-blur-md rounded-2xl shadow-xl z-[60] border-l-4 border-orange-500 p-4 animate-slide-down cursor-pointer flex items-start gap-3 ring-1 ring-black/5">
+                <div onClick={() => handleJumpToVideo(pushNotification.videoTime)} className="fixed top-4 left-4 right-4 bg-white/95 backdrop-blur-md rounded-2xl shadow-xl z-[60] border-l-4 border-orange-500 p-4 animate-slide-down cursor-pointer flex items-start gap-3 ring-1 ring-black/5">
                    <div className="bg-orange-100 p-2 rounded-full text-orange-600 flex-shrink-0 mt-0.5"><AlertTriangle size={20} /></div>
                    <div className="flex-1 min-w-0">
                      <div className="flex justify-between items-start"><h4 className="font-bold text-gray-900 text-sm">PetGuard 智能警报</h4><span className="text-[10px] text-gray-400">刚刚</span></div>
@@ -264,15 +400,60 @@
                 </div>
               )}
 
-              {/* 模拟播放器弹窗 (UI Only) */}
-              {playModal && (
-                <div className="fixed inset-0 z-[70] bg-black flex flex-col justify-center items-center animate-fade-in" onClick={() => setPlayModal(false)}>
-                    <div className="text-white text-center">
-                        <PlayCircle size={64} className="mx-auto mb-4 opacity-80"/>
-                        <p className="text-lg font-bold">视频播放器 UI 演示</p>
-                        <p className="text-sm text-gray-400 mt-2">此处将加载 .mp4 视频流</p>
-                        <div className="mt-8 flex gap-4 justify-center text-xs text-gray-500">
-                             <span className="flex items-center gap-1"><X size={14}/> 点击任意处关闭</span>
+              {/* Video Modal */}
+              {playModal.show && (
+                <div className="fixed inset-0 z-[70] bg-black/95 flex flex-col justify-center items-center animate-in fade-in duration-200">
+                  <button onClick={() => setPlayModal({ show: false, startTime: 0, src: null })} className="absolute top-4 right-4 text-white p-2 bg-white/10 rounded-full hover:bg-white/20 transition-colors z-50"><X size={24} /></button>
+                  <div className="w-full aspect-video bg-black relative">
+                    {/* 回放无框 */}
+                    <video ref={modalVideoRef} src={playModal.src} className="w-full h-full object-contain" controls muted autoPlay />
+                  </div>
+                  <div className="mt-6 text-white/90 text-sm bg-gray-800/80 px-6 py-2 rounded-full border border-white/10 flex items-center gap-2"><Sparkles size={14} className="text-yellow-400"/> AI 智能回放</div>
+                </div>
+              )}
+
+              {/* 编辑宠物弹窗 */}
+              {editModalOpen && (
+                <div className="fixed inset-0 z-[80] bg-black/60 backdrop-blur-sm flex items-center justify-center animate-fade-in">
+                    <div className="bg-white w-[85%] max-w-sm rounded-2xl p-6 shadow-2xl animate-zoom-in">
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-lg font-bold text-gray-900">编辑信息</h3>
+                            <button onClick={() => setEditModalOpen(false)} className="text-gray-400 hover:text-gray-600"><X size={20}/></button>
+                        </div>
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-xs font-medium text-gray-500 mb-1">名字</label>
+                                <input 
+                                    type="text" 
+                                    value={editForm.name} 
+                                    onChange={(e) => setEditForm({...editForm, name: e.target.value})}
+                                    className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/50 transition-all"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-medium text-gray-500 mb-1">品种</label>
+                                <input 
+                                    type="text" 
+                                    value={editForm.type} 
+                                    onChange={(e) => setEditForm({...editForm, type: e.target.value})}
+                                    className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/50 transition-all"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-medium text-gray-500 mb-1">体重</label>
+                                <input 
+                                    type="text" 
+                                    value={editForm.weight} 
+                                    onChange={(e) => setEditForm({...editForm, weight: e.target.value})}
+                                    className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/50 transition-all"
+                                />
+                            </div>
+                        </div>
+                        <div className="mt-6 flex gap-3">
+                            <button onClick={() => setEditModalOpen(false)} className="flex-1 py-2 text-sm text-gray-600 font-medium bg-gray-100 rounded-full hover:bg-gray-200 transition-colors">取消</button>
+                            <button onClick={savePetInfo} className="flex-1 py-2 text-sm text-white font-bold bg-orange-500 rounded-full hover:bg-orange-600 transition-colors shadow-md active:scale-95 flex items-center justify-center gap-1">
+                                <Save size={14}/> 保存
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -281,7 +462,7 @@
               {/* ======= Tab 1: 日报 (Timeline) ======= */}
               {activeTab === 'timeline' && (
                 <div className="flex-1 bg-gray-50 overflow-y-auto flex flex-col">
-                   {/* Calendar Header (Fixed & Scrollable with custom scrollbar) */}
+                   {/* Calendar Header */}
                    <div className="bg-white px-4 pt-4 pb-3 border-b border-gray-100 sticky top-0 z-20 shadow-sm">
                       <div className="flex justify-between items-center mb-3">
                           <h2 className="text-xl font-bold text-gray-900">PetGuard 日志</h2>
@@ -296,8 +477,8 @@
                           {CALENDAR_DAYS.map(d => (
                               <button 
                                 key={d.fullDate} 
-                                onClick={() => setSelectedDate(d.fullDate)} 
-                                className={`flex-shrink-0 w-10 h-12 rounded-xl flex flex-col items-center justify-center border transition-all ${selectedDate === d.fullDate ? 'bg-orange-500 border-orange-500 text-white shadow-md' : 'bg-white border-gray-100 text-gray-400'}`}
+                                onClick={() => setSelectedDate(d.day)} 
+                                className={`flex-shrink-0 w-10 h-12 rounded-xl flex flex-col items-center justify-center border transition-all ${selectedDate === d.day ? 'bg-orange-500 border-orange-500 text-white shadow-md' : 'bg-white border-gray-100 text-gray-400'}`}
                               >
                                   <span className="text-[9px] opacity-80">{d.week}</span>
                                   <span className="text-xs font-bold">{d.day}</span>
@@ -309,22 +490,22 @@
                    <div className="p-4 space-y-6">
                       {/* Daily Report Card */}
                       <div className="space-y-3">
-                         {(selectedCatFilter === 'all' || selectedCatFilter === '栗子') && (
+                         {(selectedCatFilter === 'all' || selectedCatFilter === '栗子') && petData['栗子'] && (
                              <div className="bg-white p-4 rounded-xl border border-orange-100 shadow-sm relative overflow-hidden animate-fade-in">
                                 <div className="flex items-center gap-2 mb-2">
                                     <div className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center text-[10px] font-bold text-gray-600">栗</div>
                                     <span className="font-bold text-sm text-gray-800">栗子</span>
                                 </div>
-                                <div className="text-xs text-gray-600 leading-relaxed whitespace-pre-line">{formatText(PET_DATA['栗子'].report)}</div>
+                                <div className="text-xs text-gray-600 leading-relaxed whitespace-pre-line">{formatText(petData['栗子'].report)}</div>
                              </div>
                          )}
-                         {(selectedCatFilter === 'all' || selectedCatFilter === '奶油') && (
+                         {(selectedCatFilter === 'all' || selectedCatFilter === '奶油') && petData['奶油'] && (
                              <div className="bg-white p-4 rounded-xl border border-yellow-100 shadow-sm relative overflow-hidden animate-fade-in">
                                 <div className="flex items-center gap-2 mb-2">
                                     <div className="w-5 h-5 rounded-full bg-yellow-100 flex items-center justify-center text-[10px] font-bold text-yellow-700">奶</div>
                                     <span className="font-bold text-sm text-gray-800">奶油</span>
                                 </div>
-                                <div className="text-xs text-gray-600 leading-relaxed whitespace-pre-line">{formatText(PET_DATA['奶油'].report)}</div>
+                                <div className="text-xs text-gray-600 leading-relaxed whitespace-pre-line">{formatText(petData['奶油'].report)}</div>
                              </div>
                          )}
                       </div>
@@ -351,7 +532,7 @@
                                       
                                       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
                                          {/* Video Thumbnail Area (All Events have this now) */}
-                                         <div onClick={() => setPlayModal(true)} className={`w-full h-32 relative cursor-pointer group/vid ${log.thumbColor}`}>
+                                         <div onClick={() => handleJumpToVideo(log.videoTime, log.videoSrc)} className={`w-full h-32 relative cursor-pointer group/vid ${log.thumbColor}`}>
                                              <div className="absolute inset-0 bg-black/5 group-hover/vid:bg-black/10 transition-colors"></div>
                                              {/* Thumbnail Icon */}
                                              <div className="absolute inset-0 flex items-center justify-center opacity-30 group-hover/vid:opacity-40 transition-opacity">
@@ -365,7 +546,7 @@
                                                  </div>
                                              </div>
                                              <div className="absolute bottom-2 right-2 flex items-center gap-1 text-[10px] text-white font-medium bg-black/40 px-2 py-1 rounded backdrop-blur-sm">
-                                                 <Video size={10} /> 视频回放
+                                                 <Video size={10} /> 点击回放
                                              </div>
                                          </div>
 
@@ -375,13 +556,13 @@
                                                  <div className="flex flex-col">
                                                      <div className="flex items-center gap-2 mb-1">
                                                          <span className="font-bold text-sm text-gray-800">{log.cat}</span>
-                                                         <span className="text-xs text-gray-400 font-mono">{log.time}</span>
+                                                         <span className="text-xs text-gray-400">{log.time}</span>
                                                      </div>
                                                      {/* Tags */}
                                                      <div className="flex gap-1 flex-wrap">
                                                          {log.act.map((tag, i) => {
                                                              const isAlert = tag.includes('互动') || tag.includes('呕吐');
-                                                             return <span key={i} className={`text-[10px] px-1.5 py-0.5 rounded border ${isAlert ? 'bg-orange-50 text-orange-600 border-orange-100' : 'bg-gray-50 text-gray-600 border-gray-100'}`}>{tag}</span>
+                                                             return <span key={i} className={`text-[10px] px-1.5 py-0.5 rounded border ${getTagStyle(tag)}`}>{tag}</span>
                                                          })}
                                                      </div>
                                                  </div>
@@ -417,10 +598,22 @@
                     <div className="bg-white px-6 py-8 border-b border-gray-100"><h2 className="text-2xl font-bold text-gray-900 mb-1">设置</h2><p className="text-sm text-gray-500">管理您的设备与宠物档案</p></div>
                     <div className="p-4 space-y-6">
                         <section>
-                            <div className="flex justify-between items-center mb-3 px-1"><h3 className="text-sm font-bold text-gray-700 uppercase tracking-wide">我的宠物</h3><button className="text-xs text-orange-600 font-medium hover:text-orange-700">编辑</button></div>
+                            <div className="flex justify-between items-center mb-3 px-1"><h3 className="text-sm font-bold text-gray-700 uppercase tracking-wide">我的宠物</h3></div>
                             <div className="space-y-3">
-                                <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between"><div className="flex items-center gap-4"><div className="w-12 h-12 rounded-full bg-gray-200 text-gray-700 flex items-center justify-center text-lg font-bold shadow-inner">栗</div><div><div className="font-bold text-gray-900">栗子</div><div className="text-xs text-gray-500 mt-0.5">狸花猫 · 4.2kg</div></div></div></div>
-                                <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between"><div className="flex items-center gap-4"><div className="w-12 h-12 rounded-full bg-yellow-100 text-yellow-700 flex items-center justify-center text-lg font-bold shadow-inner">奶</div><div><div className="font-bold text-gray-900">奶油</div><div className="text-xs text-gray-500 mt-0.5">金渐层长毛 · 5.5kg</div></div></div></div>
+                                {Object.keys(petData).map(cat => (
+                                    <div key={cat} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between group cursor-pointer hover:border-orange-200 transition-colors">
+                                        <div className="flex items-center gap-4">
+                                            <div className={`w-12 h-12 rounded-full ${petData[cat].avatarColor} flex items-center justify-center text-lg font-bold shadow-inner`}>{cat[0]}</div>
+                                            <div>
+                                                <div className="font-bold text-gray-900">{cat}</div>
+                                                <div className="text-xs text-gray-500 mt-0.5">{petData[cat].type} · {petData[cat].weight}</div>
+                                            </div>
+                                        </div>
+                                        <div onClick={() => openEditModal(cat)} className="bg-gray-50 p-2 rounded-full text-gray-400 group-hover:bg-orange-50 group-hover:text-orange-500 transition-colors">
+                                            <Edit2 size={16}/>
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
                         </section>
                         <section>
